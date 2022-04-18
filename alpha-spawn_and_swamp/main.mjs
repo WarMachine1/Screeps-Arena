@@ -27,27 +27,30 @@ import { generate_support_cost_matrix } from './support_cost_matrix_functions';
 
 var harvester = [MOVE,WORK,WORK,WORK,WORK,CARRY];
 var constructor = [MOVE,WORK,CARRY,MOVE,MOVE];
-var mover = [CARRY,MOVE,MOVE];
-//var defender = [MOVE,MOVE,MOVE,ATTACK,ATTACK,ATTACK];
-var defender = [TOUGH,TOUGH,TOUGH,TOUGH,MOVE,MOVE,MOVE,MOVE,MOVE,ATTACK,ATTACK,ATTACK,ATTACK,ATTACK,ATTACK,ATTACK,MOVE];
+var mover = [CARRY,CARRY,CARRY,MOVE,MOVE,MOVE];
+// var defender = [TOUGH,TOUGH,TOUGH,MOVE,MOVE,MOVE,ATTACK,ATTACK,ATTACK];
+var defender = [TOUGH,TOUGH,TOUGH,TOUGH,TOUGH,TOUGH,TOUGH,TOUGH,TOUGH,TOUGH,MOVE,MOVE,MOVE,MOVE,MOVE,ATTACK,ATTACK,ATTACK,ATTACK,ATTACK,ATTACK,ATTACK,MOVE];
+var minuteman = [TOUGH,TOUGH,TOUGH,TOUGH,ATTACK,ATTACK,MOVE]
 var raider = [RANGED_ATTACK,RANGED_ATTACK,MOVE,MOVE,MOVE,MOVE,MOVE,MOVE,MOVE,MOVE,MOVE,HEAL];
 var healer = [HEAL,HEAL,HEAL,HEAL,MOVE,MOVE,MOVE,MOVE]
 var harvester_limit = 0;
-var mover_limit = 4;
+var mover_limit = 2;
 var second_mover_limit = 15;
 var constructor_limit = 1;
 var raider_limit = 1;
+var minutemen_limit = 2;
 var defender_limit = 500;
-var healer_limit = 1;
+var defender_to_healer_ratio = 3;
 var swarm_size = 4;
 var swarm_acheived = false;
-let rally_point = {x:5*flip_ext_locations,y:0};
+let rally_point = {x:30*flip_locations,y:0};
 const rally_point_2 = {x:0,y:-30};
 
 var harvesters = [];
 export var constructors = [];
 var healers = [];
 var defenders = [];
+var minutemen = [];
 var raiders = [];
 var archers = [];
 var movers = [];
@@ -55,13 +58,13 @@ export var towers = [];
 // var tower_locations = [{x:0,y:-3}];
 var tower_locations = [];
 var rampart_locations = [{x:0,y:0}];
-var flip_ext_locations = 1;
+var flip_locations = 1;
 var extension_locations = [{x:-2,y:-5},{x:0,y:-5},{x:2,y:-5}];
 //var extension_locations = [];
 var towerConstructionCount = 0;
 var rampartConstructionCount = 0;
 var extensionConstructionCount = 0;
-var rush_time = 1300;
+var rush_time = 1100;
 var support_cost_matrix = generate_support_cost_matrix();
 export var visual_debug = false;
 
@@ -75,10 +78,10 @@ export function loop() {
     var sources = utils.getObjectsByPrototype(Source);
     var spawn = utils.getObjectsByPrototype(StructureSpawn).find(i => i.my);
     if(spawn.x > 50) {
-        flip_ext_locations = -1;
+        flip_locations = -1;
     }
-    rally_point = {x:5*flip_ext_locations,y:0};
-    //extension_locations = [{x:5*flip_ext_locations,y:-2},{x:5*flip_ext_locations,y:-0},{x:5*flip_ext_locations,y:2}];
+    rally_point = {x:30*flip_locations,y:0};
+    //extension_locations = [{x:5*flip_locations,y:-2},{x:5*flip_locations,y:-0},{x:5*flip_locations,y:2}];
 
     // console.log("Constructor Limit: " + constructor_limit);
     // console.log("Tile 3: " + support_cost_matrix.get(spawn.x,spawn.y-3));
@@ -94,6 +97,7 @@ export function loop() {
     constructors = [];
     healers = [];
     defenders = [];
+    minutemen = [];
     raiders = [];
     archers = [];
     movers = [];
@@ -122,31 +126,35 @@ export function loop() {
         if(check_creep_spawned(creep)) {
             switch(creep.role) {
                 case "defender":
-                    defenders.push(creep)
+                    defenders.push(creep);
+                    break;
+                
+                case "minuteman":
+                    minutemen.push(creep);
                     break;
 
                 case "harvester":
-                    harvesters.push(creep)
+                    harvesters.push(creep);
                     break;
                 
                 case "constructor":
-                    constructors.push(creep)
+                    constructors.push(creep);
                     break;
 
                 case "healer":
-                    healers.push(creep)
+                    healers.push(creep);
                     break;
 
                 case "archer":
-                    archers.push(creep)
+                    archers.push(creep);
                     break;
 
                 case "raider":
-                    raiders.push(creep)
+                    raiders.push(creep);
                     break;
     
                 case "mover":
-                    movers.push(creep)
+                    movers.push(creep);
                     break;
 
                 default:
@@ -179,6 +187,10 @@ export function loop() {
 
     for(var creep of defenders) { //defender creep
         defender_behavior(creep);
+    }
+
+    for(var creep of minutemen) { //minuteman creep
+        minuteman_behavior(creep);
     }
 
     for(var creep of raiders) { //raider creep
@@ -215,9 +227,14 @@ export function loop() {
             enemy_armed_creeps.push(e_creep);
         }
     }
-
+    
     //spawning
-    if (movers.length<mover_limit) {
+    if (minutemen.length < minutemen_limit && enemy_armed_incursion()) {
+        let ret = spawn.spawnCreep(minuteman);
+        if(!ret.error) {
+            ret.object.role = "minuteman";
+        }
+    } else if (movers.length<mover_limit) {
         let ret = spawn.spawnCreep(mover);
         if(!ret.error) {
             ret.object.role = "mover";
@@ -233,13 +250,13 @@ export function loop() {
             ret.object.role = "constructor";
             ret.object.request_energy = false;
         }
-    } else if (raiders.length < raider_limit && enemy_eco_creeps.length > 4) {
+    } else if (raiders.length < raider_limit && enemy_eco_creeps.length >= 1) {
         let ret = spawn.spawnCreep(raider);
         if(!ret.error) {
             ret.object.role = "raider";
             ret.object.activated = true;
         }
-    } else if (healers.length < healer_limit && defenders.length > 3) {
+    } else if (healers.length < defenders.length/defender_to_healer_ratio && defenders.length >= 2) {
         let ret = spawn.spawnCreep(healer);
         if(!ret.error) {
             ret.object.role = "healer";
@@ -257,11 +274,11 @@ function harvester_behavior(creep) {
     var spawn = utils.getObjectsByPrototype(StructureSpawn).find(i => i.my);
     if(creep.store.getFreeCapacity(RESOURCE_ENERGY)) {
         if(creep.harvest(source) == ERR_NOT_IN_RANGE) {
-            creep.moveTo(source, support_cost_matrix);
+            creep.moveTo(source, {costMatrix: support_cost_matrix});
         }
     } else if (movers.length < 1) { //no movers
         if(creep.transfer(spawn, RESOURCE_ENERGY) == ERR_NOT_IN_RANGE) {
-            creep.moveTo(spawn, support_cost_matrix);
+            creep.moveTo(spawn, {costMatrix: support_cost_matrix});
         }
     }
 }
@@ -284,7 +301,7 @@ function constructor_behavior(creep) {
         constructor_limit = 0;
     } else {
         if(creep.build(constructionSite)==ERR_NOT_IN_RANGE) {
-            creep.moveTo(constructionSite, support_cost_matrix)
+            creep.moveTo(constructionSite, {costMatrix: support_cost_matrix})
         } else {
             creep.request_energy = true;
         }
@@ -303,7 +320,8 @@ function defender_behavior(creep) {
     var creeps = utils.getObjectsByPrototype(Creep).filter(i => i.my);
     var myDamagedCreeps = creeps.filter(i => i.hits < i.hitsMax);
     var closestDamagedCreep = creep.findClosestByPath(myDamagedCreeps);
-    if (!swarm_acheived && getTicks() < rush_time && (!closestEnemyToSpawn || (closestEnemyToSpawn && getRange(spawn,closestEnemyToSpawn) > 20))) {
+    // && (!closestEnemyToSpawn || (closestEnemyToSpawn && getRange(spawn,closestEnemyToSpawn) > 30)) 
+    if (!swarm_acheived && getTicks() < rush_time && !enemy_armed_excursion()) {
         creep.moveTo(spawn.x + rally_point["x"],spawn.y + rally_point["y"]);
     } else if (closestEnemy && creep.attack(closestEnemy) == ERR_NOT_IN_RANGE) {
         creep.moveTo(closestEnemy);
@@ -324,6 +342,46 @@ function defender_behavior(creep) {
 
 }
 
+function minuteman_behavior(creep) {
+    var enemy_creeps = utils.getObjectsByPrototype(Creep).filter(i => !i.my);
+    var spawn = utils.getObjectsByPrototype(StructureSpawn).find(i => i.my);
+
+    var enemy_eco_creeps = [];
+    var enemy_armed_creeps = [];
+
+    for(var e_creep of enemy_creeps) {
+        if(!e_creep.body.some(bodyPart => bodyPart.type == ATTACK) && !e_creep.body.some(bodyPart => bodyPart.type == RANGED_ATTACK) && !e_creep.body.some(bodyPart => bodyPart.type == HEAL)) {
+            enemy_eco_creeps.push(e_creep);
+        } else {
+            enemy_armed_creeps.push(e_creep);
+        }
+    }
+
+    var target_creep;
+    //find creeps within range 3 of the spawn, prioritize armed
+    for(var e_armed_creep of enemy_armed_creeps) {
+        if(getRange(spawn, e_armed_creep) <= 5) {
+            target_creep = e_armed_creep;
+        }
+    }
+    if(!target_creep) {
+        for(var e_eco_creep of enemy_eco_creeps) {
+            if(getRange(spawn, e_eco_creep) <= 5) {
+                target_creep = e_eco_creep;
+            }
+        }
+    }
+
+    if(target_creep) {
+        if(creep.attack(target_creep) == ERR_NOT_IN_RANGE) {
+            creep.moveTo(target_creep);
+        }
+    } else {
+        creep.moveTo({x: spawn.x+flip_locations*3, y: spawn.y});
+    }
+
+}
+
 function raider_behavior(creep) {
     var enemy_creeps = utils.getObjectsByPrototype(Creep).filter(i => !i.my);
     var enemy_spawns = utils.getObjectsByPrototype(StructureSpawn).filter(i => !i.my);
@@ -340,10 +398,9 @@ function raider_behavior(creep) {
         }
     }
 
-    var closestEcoEnemy = creep.findClosestByPath(enemy_eco_creeps);
-    var closestArmedEnemy = creep.findClosestByPath(enemy_armed_creeps);
+    var closestEcoEnemy = creep.findClosestByPath(enemy_eco_creeps, {costMatrix: support_cost_matrix});
     var closestEnemy = creep.findClosestByPath(enemy_creeps);
-    var closestEnemySpawn = creep.findClosestByPath(enemy_spawns);
+    var closestEnemySpawn = creep.findClosestByPath(enemy_spawns, {costMatrix: support_cost_matrix});
     var creeps_d = utils.getObjectsByPrototype(Creep).filter(i => i.my);
     var defenders_d = [];
 
@@ -405,11 +462,22 @@ function healer_behavior(creep) {
     var creeps = utils.getObjectsByPrototype(Creep).filter(i => i.my);
     var myDamagedCreeps = creeps.filter(i => i.hits < i.hitsMax);
     if(myDamagedCreeps.length > 0) {
-        var closest_damaged_friendly = creep.findClosestByPath(myDamagedCreeps);
+        var closest_damaged_friendly = creep.findClosestByPath(myDamagedCreeps, {costMatrix: support_cost_matrix});
         if(creep.heal(closest_damaged_friendly) == ERR_NOT_IN_RANGE) {
             creep.moveTo(closest_damaged_friendly, {costMatrix: support_cost_matrix});
             creep.rangedHeal(closest_damaged_friendly);
         }
+    } else if (defenders.length > 0 && !(!swarm_acheived && getTicks() < rush_time && !enemy_armed_excursion())) { //defenders charging -> follow defenders
+        var furthest_defender = defenders[0];
+        var current_range = 0;
+        for(var d of defender) {
+            var range = getRange(d,spawn);
+            if (getRange(d,spawn) > range) {
+                furthest_defender = d;
+                current_range = range;
+            }
+        }
+        creep.moveTo(furthest_defender, {costMatrix: support_cost_matrix});
     } else {
         creep.moveTo(spawn.x + rally_point["x"],spawn.y + rally_point["y"], {costMatrix: support_cost_matrix});
     }
@@ -437,8 +505,8 @@ function mover_behavior(creep) {
     var extensions = utils.getObjectsByPrototype(StructureExtension).filter(i => i.my);
     if(creep.store.getFreeCapacity(RESOURCE_ENERGY)) {
         var harvesters_tmp = [...harvesters];
-        var closest_harvester = creep.findClosestByPath(harvesters_tmp);//find closest mover with more than half energy
-        var closest_container = creep.findClosestByPath(containers);
+        var closest_harvester = creep.findClosestByPath(harvesters_tmp, {costMatrix: support_cost_matrix});//find closest mover with more than half energy
+        var closest_container = creep.findClosestByPath(containers, {costMatrix: support_cost_matrix});
         //console.log("Closest Container Location: (" + closest_container.x + "," + closest_container.y + ")")
         
         if(containers.length > 0) {
@@ -454,7 +522,7 @@ function mover_behavior(creep) {
                         if (harvesters_tmp[i] === closest_harvester) { 
                             harvesters_tmp.splice(i, 1); 
                         }
-                        closest_harvester = creep.findClosestByPath(harvesters_tmp)
+                        closest_harvester = creep.findClosestByPath(harvesters_tmp, {costMatrix: support_cost_matrix})
                     }
                 } else {
                     found_harvester_needing_pickup = true;
@@ -538,7 +606,7 @@ function nearest_constructor_requesting(creep) {
     var requesting_constructors = constructors.filter(function (constructor) {
         return constructor.request_energy;
     });
-    return creep.findClosestByPath(requesting_constructors);
+    return creep.findClosestByPath(requesting_constructors, {costMatrix: support_cost_matrix});
 }
 
 function constructor_requesting() {
@@ -552,7 +620,7 @@ function nearest_tower_requesting(creep) {
     var requesting_towers = towers.filter(function (tower) {
         return tower.request_energy;
     });
-    return creep.findClosestByPath(requesting_towers);
+    return creep.findClosestByPath(requesting_towers, {costMatrix: support_cost_matrix});
 }
 
 function tower_requesting() {
@@ -562,3 +630,102 @@ function tower_requesting() {
     return requesting_towers.length > 0;
 }
 
+function enemy_armed_excursion() {
+    
+    var enemy_creeps = utils.getObjectsByPrototype(Creep).filter(i => !i.my);
+    var spawn = utils.getObjectsByPrototype(StructureSpawn).find(i => i.my);
+
+    var enemy_eco_creeps = [];
+    var enemy_armed_creeps = [];
+
+    for(var e_creep of enemy_creeps) {
+        if(!e_creep.body.some(bodyPart => bodyPart.type == ATTACK) && !e_creep.body.some(bodyPart => bodyPart.type == RANGED_ATTACK) && !e_creep.body.some(bodyPart => bodyPart.type == HEAL)) {
+            enemy_eco_creeps.push(e_creep);
+        } else {
+            enemy_armed_creeps.push(e_creep);
+        }
+    }
+
+    var result = false;
+
+    for(var e_armed_creep of enemy_armed_creeps) {
+        if(spawn.x < 50 && e_armed_creep.x < 85) {
+            result = true;
+        }
+        if(spawn.x > 50 && e_armed_creep.x > 15) {
+            result = true;
+        }
+    }
+    // console.log("Enemy Excursion: " + result);
+    return result;
+
+}
+
+function enemy_armed_incursion() {
+    
+    var enemy_creeps = utils.getObjectsByPrototype(Creep).filter(i => !i.my);
+    var spawn = utils.getObjectsByPrototype(StructureSpawn).find(i => i.my);
+
+    var enemy_eco_creeps = [];
+    var enemy_armed_creeps = [];
+
+    for(var e_creep of enemy_creeps) {
+        if(!e_creep.body.some(bodyPart => bodyPart.type == ATTACK) && !e_creep.body.some(bodyPart => bodyPart.type == RANGED_ATTACK) && !e_creep.body.some(bodyPart => bodyPart.type == HEAL)) {
+            enemy_eco_creeps.push(e_creep);
+        } else {
+            enemy_armed_creeps.push(e_creep);
+        }
+    }
+
+    var result = false;
+
+    for(var e_armed_creep of enemy_armed_creeps) {
+        if(spawn.x < 50 && e_armed_creep.x < 15) {
+            result = true;
+        }
+        if(spawn.x > 50 && e_armed_creep.x > 85) {
+            result = true;
+        }
+    }
+    // console.log("Enemy Excursion: " + result);
+    return result;
+}
+
+function get_creep_cost(body_part_array) {
+    var total = 0
+    for(var body_part of body_part_array) {
+        switch(body_part) {
+            case MOVE:
+                total += 50;
+                break;
+
+            case WORK:
+                total += 100;
+                break;
+    
+            case CARRY:
+                total += 50;
+                break;  
+
+            case ATTACK:
+                total += 80;
+                break;
+
+            case RANGED_ATTACK:
+                total += 150;
+                break;
+
+            case HEAL:
+                total += 250;
+                break;
+
+            case TOUGH:
+                total += 10;
+                break;
+            
+            default:
+                break;
+        }
+    }
+    return total
+}

@@ -82,6 +82,27 @@ export function generate_support_cost_matrix() {
                                 if (visual_debug) { text("x", { x: i, y: j }, { color: "#bbff00" }); }
                             }
                             break;
+                        
+                        case 5:
+                            if (cost.get(i, j) < 50) {
+                                cost.set(i, j, 70);
+                                if (visual_debug) { text("x", { x: i, y: j }, { color: "#bbff00" }); }
+                            }
+                            break;
+                        
+                        case 6:
+                            if (cost.get(i, j) < 40) {
+                                cost.set(i, j, 70);
+                                if (visual_debug) { text("x", { x: i, y: j }, { color: "#bbff00" }); }
+                            }
+                            break;
+                        
+                        case 7:
+                            if (cost.get(i, j) < 30) {
+                                cost.set(i, j, 70);
+                                if (visual_debug) { text("x", { x: i, y: j }, { color: "#bbff00" }); }
+                            }
+                            break;
 
                         default:
                             break;
