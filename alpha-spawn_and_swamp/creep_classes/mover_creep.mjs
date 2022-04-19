@@ -1,8 +1,31 @@
+import * as prototypes from '/game/prototypes';
+for (let globalKey in prototypes) { global[globalKey] = prototypes[globalKey];}
+
+import * as constants from '/game/constants';
+for (let globalKey in constants) { global[globalKey] = constants[globalKey];}
+
+import * as specConstants from '/arena/constants';
+for (let globalKey in specConstants) { global[globalKey] = specConstants[globalKey];}
+
+import * as utils from '/game/utils';
+for (let globalKey in utils) { global[globalKey] = utils[globalKey];}
+
+import * as pathing from '/game/path-finder';
+for (let globalKey in pathing) { global[globalKey] = pathing[globalKey];}
+
+import * as arenaConstants from '/arena';
+for (let globalKey in arenaConstants) { global[globalKey] = arenaConstants[globalKey];}
+
+
+import { arenaInfo } from '/game';
+
 import { general_creep } from './general_creep'
 
-export default class defender_creep extends general_creep {
+import { support_cost_matrix } from '../main.mjs';
+
+export class mover_creep extends general_creep {
     constructor(creep_object) {
-      creep_obj = creep_object
+        super(creep_object);
     }
 
     behavior() {
@@ -23,46 +46,26 @@ export default class defender_creep extends general_creep {
 
         var spawn = utils.getObjectsByPrototype(StructureSpawn).find(i => i.my);
         var extensions = utils.getObjectsByPrototype(StructureExtension).filter(i => i.my);
-        if(creep.store.getFreeCapacity(RESOURCE_ENERGY)) {
-            var harvesters_tmp = [...harvesters];
-            var closest_harvester = creep.findClosestByPath(harvesters_tmp, {costMatrix: support_cost_matrix});//find closest mover with more than half energy
-            var closest_container = creep.findClosestByPath(containers, {costMatrix: support_cost_matrix});
+        if(this.creep_obj.store.getFreeCapacity(RESOURCE_ENERGY)) {
+            var closest_container = this.creep_obj.findClosestByPath(containers, {costMatrix: support_cost_matrix});
             //console.log("Closest Container Location: (" + closest_container.x + "," + closest_container.y + ")")
             
             if(containers.length > 0) {
-                if(creep.withdraw(closest_container, RESOURCE_ENERGY) == ERR_NOT_IN_RANGE) {
-                    creep.moveTo(closest_container, {costMatrix: support_cost_matrix});
+                if(this.creep_obj.withdraw(closest_container, RESOURCE_ENERGY) == ERR_NOT_IN_RANGE) {
+                    this.creep_obj.moveTo(closest_container, {costMatrix: support_cost_matrix});
                     //creep.moveTo(closest_container);
                 }
-            } else if(sources.length > 0) {
-                let found_harvester_needing_pickup = false;
-                while(!found_harvester_needing_pickup&&harvesters_tmp.length>1) {
-                    if(closest_harvester.store.getFreeCapacity(RESOURCE_ENERGY)>closest_harvester.store.getCapacity(RESOURCE_ENERGY)-creep.store.getCapacity(RESOURCE_ENERGY)) { //has less than mover capacity
-                        for( var i = 0; i < harvesters.length; i++){     
-                            if (harvesters_tmp[i] === closest_harvester) { 
-                                harvesters_tmp.splice(i, 1); 
-                            }
-                            closest_harvester = creep.findClosestByPath(harvesters_tmp, {costMatrix: support_cost_matrix})
-                        }
-                    } else {
-                        found_harvester_needing_pickup = true;
-                    }
-                }
-                if(closest_harvester.transfer(creep, RESOURCE_ENERGY) == ERR_NOT_IN_RANGE) {
-                    creep.moveTo(closest_harvester, {costMatrix: support_cost_matrix});
-                    // creep.moveTo(closest_harvester);
-                }
             }
-        } else if (tower_requesting()) {
-            var target_tower = nearest_tower_requesting(creep);
-            if(creep.transfer(target_tower, RESOURCE_ENERGY) == ERR_NOT_IN_RANGE) {
-                creep.moveTo(target_tower, {costMatrix: support_cost_matrix});
+        /*} else if (tower_requesting()) {
+            var target_tower = nearest_tower_requesting(this.creep_obj);
+            if(this.creep_obj.transfer(target_tower, RESOURCE_ENERGY) == ERR_NOT_IN_RANGE) {
+                this.creep_obj.moveTo(target_tower, {costMatrix: support_cost_matrix});
                 // creep.moveTo(target_tower);
             }
         } else if (constructor_requesting()) {
             var target_constructor = nearest_constructor_requesting(creep);
-            if(creep.transfer(target_constructor, RESOURCE_ENERGY) == ERR_NOT_IN_RANGE) {
-                creep.moveTo(target_constructor, {costMatrix: support_cost_matrix});
+            if(this.creep_obj.transfer(target_constructor, RESOURCE_ENERGY) == ERR_NOT_IN_RANGE) {
+                this.creep_obj.moveTo(target_constructor, {costMatrix: support_cost_matrix});
                 // creep.moveTo(target_constructor);
             }
         } else {
@@ -75,16 +78,13 @@ export default class defender_creep extends general_creep {
                         target_extension = ex;
                     }
                 }
-                if (creep.transfer(target_extension, RESOURCE_ENERGY) == ERR_NOT_IN_RANGE) {
-                    //console.log("Moving: " + creep.moveTo(target_extension, {costMatrix: support_cost_matrix}));
-                    creep.moveTo(target_extension, {costMatrix: support_cost_matrix});
+                if (this.creep_obj.transfer(target_extension, RESOURCE_ENERGY) == ERR_NOT_IN_RANGE) {
+                    this.creep_obj.moveTo(target_extension, {costMatrix: support_cost_matrix});
                 }
-                //console.log("Delivering to Extension at " + target_extension.x + "," + target_extension.y);
-            } else if(creep.transfer(spawn, RESOURCE_ENERGY) == ERR_NOT_IN_RANGE) {
-                //console.log("Delivering to Spawn");
-                //console.log("Moving: " + creep.moveTo(spawn, {costMatrix: support_cost_matrix}));
-                creep.moveTo(spawn, {costMatrix: support_cost_matrix});
-            }
+                //console.log("Delivering to Extension at " + target_extension.x + "," + target_extension.y); */
+        } else if(this.creep_obj.transfer(spawn, RESOURCE_ENERGY) == ERR_NOT_IN_RANGE) {
+            
+            this.creep_obj.moveTo(spawn, {costMatrix: support_cost_matrix});
         }
     }
 }

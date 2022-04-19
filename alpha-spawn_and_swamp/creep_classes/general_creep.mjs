@@ -16,16 +16,44 @@ for (let globalKey in pathing) { global[globalKey] = pathing[globalKey];}
 import * as arenaConstants from '/arena';
 for (let globalKey in arenaConstants) { global[globalKey] = arenaConstants[globalKey];}
 
+import { support_cost_matrix } from '../main.mjs';
 
 import { arenaInfo } from '/game';
 
 export class general_creep {
     constructor(creep_object) {
-      this.creep_obj = creep_object
+      this.creep_obj = creep_object;
+      this.status = "spawning";
+    }
+
+    update() {
+      this.update_status();
+      this.behavior();
     }
 
     behavior() {
 
+    }
+
+    update_status() {
+      if(this.overlapping_spawn) {
+        this.status = "spawning";
+      } else if (this.creep_obj.hits) {
+        this.status = "alive";
+      } else {
+        this.status = "dead";
+      }
+    }
+
+    overlapping_spawn() {
+      var result = false;
+      var spawns = utils.getObjectsByPrototype(StructureSpawn).filter(i => i.my);
+      spawns.forEach(spawn => {
+          if(spawn.x === this.creep_obj.x && spawn.y === this.creep_obj.y) {
+              result = true;
+        }
+      });
+      return result;
     }
 
 }
