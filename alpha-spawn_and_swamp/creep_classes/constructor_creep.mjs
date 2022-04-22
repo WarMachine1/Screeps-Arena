@@ -1,33 +1,48 @@
+import * as prototypes from '/game/prototypes';
+for (let globalKey in prototypes) { global[globalKey] = prototypes[globalKey];}
+
+import * as constants from '/game/constants';
+for (let globalKey in constants) { global[globalKey] = constants[globalKey];}
+
+import * as specConstants from '/arena/constants';
+for (let globalKey in specConstants) { global[globalKey] = specConstants[globalKey];}
+
+import * as utils from '/game/utils';
+for (let globalKey in utils) { global[globalKey] = utils[globalKey];}
+
+import * as pathing from '/game/path-finder';
+for (let globalKey in pathing) { global[globalKey] = pathing[globalKey];}
+
+import * as arenaConstants from '/arena';
+for (let globalKey in arenaConstants) { global[globalKey] = arenaConstants[globalKey];}
+
 import { general_creep } from './general_creep'
 
-export default class defender_creep extends general_creep {
+import { support_cost_matrix } from '../main.mjs';
+
+export class constructor_creep extends general_creep {
     constructor(creep_object) {
-      creep_obj = creep_object
+        super(creep_object);
+        this.request_energy = false;
     }
 
     behavior() {
-        var constructionSite = utils.getObjectsByPrototype(prototypes.ConstructionSite).find(i => i.my);
-        var spawn = utils.getObjectsByPrototype(StructureSpawn).find(i => i.my);
-        if(!constructionSite && rampartConstructionCount < rampart_locations.length) {
-            utils.createConstructionSite(spawn.x+rampart_locations[rampartConstructionCount]["x"],spawn.y+rampart_locations[rampartConstructionCount]["y"], StructureRampart);
-            rampartConstructionCount++;
-        } else if(!constructionSite && towerConstructionCount < tower_locations.length) {
-            utils.createConstructionSite(spawn.x+tower_locations[towerConstructionCount]["x"],spawn.y+tower_locations[towerConstructionCount]["y"], StructureTower);
-            towerConstructionCount++;
-        } else if(!constructionSite && extensionConstructionCount < extension_locations.length) {
-            utils.createConstructionSite(spawn.x+extension_locations[extensionConstructionCount]["x"],spawn.y+extension_locations[extensionConstructionCount]["y"], StructureExtension);
-            extensionConstructionCount++;
-        } else if(!constructionSite && towerConstructionCount >= tower_locations.length && rampartConstructionCount >= rampart_locations.length && extensionConstructionCount >= extension_locations.length) {
-            creep.request_energy = false;
-            creep.role = "mover";
-            constructor_limit = 0;
+        //console.log("Constructor request status: " + this.request_energy);
+        // console.log("Constructor Behavior");
+        let construction_sites = utils.getObjectsByPrototype(ConstructionSite).filter(i => i.my);
+        // console.log("Construction Sites: " + JSON.stringify(construction_sites));
+        let closest_construction_site = this.creep_obj.findClosestByPath(construction_sites);
+        // console.log("Closest Construction Site: " + JSON.stringify(closest_construction_site));
+        // getRange(this.creep_obj,closest_construction_site) > 3 || 
+
+        console.log("Closest Construction Site: " + JSON.stringify(closest_construction_site));
+        console.log("Range to closest consturction site: " + getRange(this.creep_obj,closest_construction_site));
+        if(getRange(this.creep_obj,closest_construction_site) > 1) {
+            console.log("Move command result: " + this.creep_obj.moveTo(closest_construction_site, {costMatrix: support_cost_matrix}));
+            this.request_energy = this.creep_obj.store.getFreeCapacity(RESOURCE_ENERGY) > 0;
         } else {
-            if(creep.build(constructionSite)==ERR_NOT_IN_RANGE) {
-                creep.moveTo(constructionSite, {costMatrix: support_cost_matrix})
-            } else {
-                creep.request_energy = true;
-            }
+            console.log("Build command result: " + this.creep_obj.build(closest_construction_site));
+            this.request_energy = true;
         }
     }
-
   }

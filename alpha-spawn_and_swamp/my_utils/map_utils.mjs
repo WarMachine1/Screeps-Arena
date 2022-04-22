@@ -80,6 +80,68 @@ export function enemy_armed_excursion() {
 
 }
 
-export function nearest_buildable_tile(x, y) {
+export function nearest_buildable_tile(coords) {
+  let result;
+  let queue = [];
+  let explored = [...Array(100)].map(e => Array(100).fill(false));
+  // console.log("Nearest Buildable Tile ran on: " + JSON.stringify(coords));
+  queue.push({x: coords["x"],y: coords["y"]});
+  while(queue.length > 0) {
+    let current_coord = queue.shift();
+    if(getTerrainAt({ x: current_coord["x"], y: current_coord["y"] }) != 1) {
+      if(check_for_structure(current_coord)) {
+        result = {x: current_coord["x"], y: current_coord["y"], err: 1};
+      } else {
+        result = {x: current_coord["x"], y: current_coord["y"]};
+      }
+      break;
+    }
 
+    if(check_in_board(current_coord) && !explored[current_coord["x"]][current_coord["y"]]) {
+      explored[current_coord["x"]][current_coord["y"]] = true;
+      queue.push({x: current_coord["x"]+1,y: current_coord["y"]});
+      queue.push({x: current_coord["x"]-1,y: current_coord["y"]});
+      queue.push({x: current_coord["x"],y: current_coord["y"]+1});
+      queue.push({x: current_coord["x"],y: current_coord["y"]-1});
+    }
+  }
+  // console.log("Result of nearest buildable: " + JSON.stringify(result));
+  return result;
+}
+
+function check_in_board(coord) {
+  return coord["x"] >= 0 && coord["x"] < 100 && coord["y"] >= 0 && coord["y"] < 100;
+}
+
+export function check_for_structure(coords) {
+  let result = false;
+  var structures = utils.getObjectsByPrototype(Structure);
+  for (var structure of structures) {
+      if(structure.x == coords["x"] && structure.y == coords["y"]) {
+        result = true;
+      }
+  }
+
+  var construction_sites = utils.getObjectsByPrototype(ConstructionSite);
+  for (var construction_site of construction_sites) {
+    if(construction_site.x == coords["x"] && construction_site.y == coords["y"]) {
+      result = true;
+    }
+  }
+  // console.log("Structure at " + JSON.stringify(coords) + ": " + result);
+  return result;
+}
+
+export function local_containers_empty() {
+  let spawn = utils.getObjectsByPrototype(prototypes.StructureSpawn).find(i => i.my);
+  let containers = utils.getObjectsByPrototype(StructureContainer);
+  for( var i = 0; i < containers.length; i++){
+    // console.log("Used Capacity: " + containers[i].store.getUsedCapacity())
+    if ( containers[i].store.getUsedCapacity() == 0) {
+        containers.splice(i, 1);
+        i--;
+    }
+  }
+  let closest_container = spawn.findClosestByPath(containers, {costMatrix: support_cost_matrix});
+  return getRange(spawn,closest_container) > 10;
 }

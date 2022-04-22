@@ -25,7 +25,7 @@ export class general_structure {
     }
 
     behavior() {
-
+      
     }
 
 }

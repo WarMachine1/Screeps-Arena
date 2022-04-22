@@ -21,63 +21,47 @@ for (let globalKey in pathing) { global[globalKey] = pathing[globalKey];}
 import * as arenaConstants from '/arena';
 for (let globalKey in arenaConstants) { global[globalKey] = arenaConstants[globalKey];}
 
+//import { text } from 'game/visual';
 
 import { arenaInfo } from '/game';
 
-import { mover_creep } from './creep_classes/mover_creep.mjs'
-import { generate_support_cost_matrix } from './generate_support_cost_matrix';
+//import { mover_creep } from './creep_classes/mover_creep.mjs'
 
-var harvester = [MOVE,WORK,WORK,WORK,WORK,CARRY];
-var constructor = [MOVE,WORK,CARRY,MOVE,MOVE];
-var mover = [CARRY,CARRY,CARRY,MOVE,MOVE,MOVE];
-// var defender = [TOUGH,TOUGH,TOUGH,MOVE,MOVE,MOVE,ATTACK,ATTACK,ATTACK];
-var defender = [TOUGH,TOUGH,TOUGH,TOUGH,TOUGH,TOUGH,TOUGH,TOUGH,TOUGH,TOUGH,MOVE,MOVE,MOVE,MOVE,MOVE,ATTACK,ATTACK,ATTACK,ATTACK,ATTACK,ATTACK,ATTACK,MOVE];
-var minuteman = [TOUGH,TOUGH,TOUGH,TOUGH,ATTACK,ATTACK,MOVE]
-var raider = [RANGED_ATTACK,RANGED_ATTACK,MOVE,MOVE,MOVE,MOVE,MOVE,MOVE,MOVE,MOVE,MOVE,HEAL];
-var healer = [HEAL,HEAL,HEAL,HEAL,MOVE,MOVE,MOVE,MOVE]
+import { general_creep } from './creep_classes/general_creep.mjs';
+
+import { strategy } from './my_utils/strategy.mjs';
+import { generate_support_cost_matrix } from './generate_support_cost_matrix.mjs';
+import { construction_manager } from './my_utils/construction_manager.mjs';
+
 
 
 
 // var tower_locations = [{x:0,y:-3}];
 var tower_locations = [];
 
-let creeps = [];
+let creeps_list = [];
+
+let this_strategy = new strategy();
+let this_construction_manager = new construction_manager();
 
 export var support_cost_matrix = generate_support_cost_matrix();
-export var visual_debug = false;
+export var visual_debug = true;
 
 export function loop() {
-
-    let test_list = {mover:5,defender:3};
-
-    console.log("Test: " + test_list["mover"]);
-
-    
     support_cost_matrix = generate_support_cost_matrix();
-    
+
+    creeps_list = this_strategy.get_creeps_list();
+    this_strategy.update();
     update_creeps();
-
-    //spawn_per_strategy();
-
-    var spawn = utils.getObjectsByPrototype(prototypes.StructureSpawn).find(i => i.my);
-
-    for(var creep of creeps) {
-        creep.update();
-    }
-
-    console.log('Screeps:', utils.getObjectsByPrototype(prototypes.Creep).filter(i => i.my).length);
-
-    if(utils.getObjectsByPrototype(prototypes.Creep).filter(i => i.my).length < 5) {
-        var obj = spawn.spawnCreep(mover);
-        if(!obj.error) {
-            creeps.push(new mover_creep(obj.object));
-        }
-    }
+    this_construction_manager.update();
+    
 }
 
 function update_creeps() {
-    for(let creep of creeps) {
+    let update_variables = this_strategy.creep_data;
+    update_variables["creeps_list"] = creeps_list;
+    for(let creep of creeps_list) {
         creep.update();
+        creep.update_data(update_variables);
     }
 }
-

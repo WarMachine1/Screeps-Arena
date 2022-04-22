@@ -35,14 +35,22 @@ export class general_creep {
 
     }
 
+    update_data(variables) {
+
+    }
+
     update_status() {
-      if(this.overlapping_spawn) {
+      if(this.overlapping_spawn()) {
         this.status = "spawning";
       } else if (this.creep_obj.hits) {
         this.status = "alive";
       } else {
         this.status = "dead";
       }
+    }
+
+    get_status() {
+      return this.status;
     }
 
     overlapping_spawn() {
