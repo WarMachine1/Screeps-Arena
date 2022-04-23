@@ -24,6 +24,7 @@ export class constructor_creep extends general_creep {
     constructor(creep_object) {
         super(creep_object);
         this.request_energy = false;
+        this.support_cost_matrix;
     }
 
     behavior() {
@@ -31,18 +32,28 @@ export class constructor_creep extends general_creep {
         // console.log("Constructor Behavior");
         let construction_sites = utils.getObjectsByPrototype(ConstructionSite).filter(i => i.my);
         // console.log("Construction Sites: " + JSON.stringify(construction_sites));
-        let closest_construction_site = this.creep_obj.findClosestByPath(construction_sites);
+        
         // console.log("Closest Construction Site: " + JSON.stringify(closest_construction_site));
         // getRange(this.creep_obj,closest_construction_site) > 3 || 
 
-        console.log("Closest Construction Site: " + JSON.stringify(closest_construction_site));
-        console.log("Range to closest consturction site: " + getRange(this.creep_obj,closest_construction_site));
-        if(getRange(this.creep_obj,closest_construction_site) > 1) {
-            console.log("Move command result: " + this.creep_obj.moveTo(closest_construction_site, {costMatrix: support_cost_matrix}));
-            this.request_energy = this.creep_obj.store.getFreeCapacity(RESOURCE_ENERGY) > 0;
+        
+        if(construction_sites.length <= 0) {
+            this.request_energy = false;
         } else {
-            console.log("Build command result: " + this.creep_obj.build(closest_construction_site));
-            this.request_energy = true;
+            let closest_construction_site = this.creep_obj.findClosestByPath(construction_sites);
+            // console.log("Closest Construction Site: " + JSON.stringify(closest_construction_site));
+            // console.log("Cost Matrix Path: " + JSON.stringify(searchPath(this.creep_obj,closest_construction_site, {costMatrix: this.support_cost_matrix})));
+            if(getRange(this.creep_obj,closest_construction_site) > 2) {
+                this.creep_obj.moveTo(closest_construction_site, {costMatrix: this.support_cost_matrix});
+                this.request_energy = this.creep_obj.store.getFreeCapacity(RESOURCE_ENERGY) > 0;
+            } else {
+                this.creep_obj.build(closest_construction_site);
+                this.request_energy = true;
+            }
         }
     }
-  }
+
+    update_data(variables) {
+        if("var_support_cost_matrix" in variables) {this.support_cost_matrix = variables["var_support_cost_matrix"]};
+    }
+}

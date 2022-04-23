@@ -45,7 +45,7 @@ let this_strategy = new strategy();
 let this_construction_manager = new construction_manager();
 
 export var support_cost_matrix = generate_support_cost_matrix();
-export var visual_debug = true;
+export var visual_debug = false;
 
 export function loop() {
     support_cost_matrix = generate_support_cost_matrix();
@@ -58,8 +58,9 @@ export function loop() {
 }
 
 function update_creeps() {
-    let update_variables = this_strategy.creep_data;
-    update_variables["creeps_list"] = creeps_list;
+    let update_variables = this_strategy.creep_data();
+    update_variables["var_creeps_list"] = creeps_list;
+    update_variables["var_support_cost_matrix"] = support_cost_matrix;
     for(let creep of creeps_list) {
         creep.update();
         creep.update_data(update_variables);

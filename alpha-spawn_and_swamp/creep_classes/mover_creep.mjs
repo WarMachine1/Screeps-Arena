@@ -21,12 +21,11 @@ import { arenaInfo } from '/game';
 
 import { general_creep } from './general_creep'
 
-import { support_cost_matrix } from '../main.mjs';
-
 export class mover_creep extends general_creep {
     constructor(creep_object) {
         super(creep_object);
         this.creeps_list = [];
+        this.support_cost_matrix;
     }
 
     behavior() {
@@ -48,14 +47,14 @@ export class mover_creep extends general_creep {
         var spawn = utils.getObjectsByPrototype(StructureSpawn).find(i => i.my);
         var extensions = utils.getObjectsByPrototype(StructureExtension).filter(i => i.my);
         let requesting_constructors = this.constructors_requesting_energy();
-        if(this.creep_obj.store.getFreeCapacity(RESOURCE_ENERGY)) {
-            var closest_container = this.creep_obj.findClosestByPath(containers, {costMatrix: support_cost_matrix});
+        if(this.creep_obj.store.getUsedCapacity(RESOURCE_ENERGY) <= 0) {
+            var closest_container = this.creep_obj.findClosestByPath(containers, {costMatrix: this.support_cost_matrix});
             //console.log("Closest Container Location: (" + closest_container.x + "," + closest_container.y + ")")
             
             if(containers.length > 0) {
                 if(this.creep_obj.withdraw(closest_container, RESOURCE_ENERGY) == ERR_NOT_IN_RANGE) {
-                    this.creep_obj.moveTo(closest_container, {costMatrix: support_cost_matrix});
-                    //creep.moveTo(closest_container);
+                    this.creep_obj.moveTo(closest_container, {costMatrix: this.support_cost_matrix});
+                    //this.creep_obj.moveTo(closest_container);
                 }
             }
         // } else if (tower_requesting()) {
@@ -66,36 +65,37 @@ export class mover_creep extends general_creep {
         //     }
         } else if (requesting_constructors.length > 0) {
             let requesting_constructor_creeps = requesting_constructors.map(a => a.creep_obj)
-            // console.log("Mover delivering to constructor");
-            // console.log("Requesting Constructors: " + JSON.stringify(requesting_constructors));
-            let target_constructor = this.creep_obj.findClosestByPath(requesting_constructor_creeps, {costMatrix: support_cost_matrix});
-            // console.log("Target Constructor: " + JSON.stringify(target_constructor));
+            let target_constructor = this.creep_obj.findClosestByPath(requesting_constructor_creeps, {costMatrix: this.support_cost_matrix});
             if(this.creep_obj.transfer(target_constructor, RESOURCE_ENERGY) == ERR_NOT_IN_RANGE) {
-                this.creep_obj.moveTo(target_constructor, {costMatrix: support_cost_matrix});
-                // creep.moveTo(target_constructor);
+                this.creep_obj.moveTo(target_constructor, {costMatrix: this.support_cost_matrix});
             }
-        // } else {
-        //     //console.log("Spawn Free Cap: " + spawn.store.getFreeCapacity(RESOURCE_ENERGY));
-        //     if (spawn.store.getFreeCapacity(RESOURCE_ENERGY) <= 0 && extensions.length > 0) {
-                
-        //         var target_extension = extensions[0];
-        //         for (var ex of extensions) {
-        //             if (ex.store.getFreeCapacity(RESOURCE_ENERGY) > 0) {
-        //                 target_extension = ex;
-        //             }
-        //         }
-        //         if (this.creep_obj.transfer(target_extension, RESOURCE_ENERGY) == ERR_NOT_IN_RANGE) {
-        //             this.creep_obj.moveTo(target_extension, {costMatrix: support_cost_matrix});
-        //         }
-        //         //console.log("Delivering to Extension at " + target_extension.x + "," + target_extension.y); 
-        } else if(this.creep_obj.transfer(spawn, RESOURCE_ENERGY) == ERR_NOT_IN_RANGE) {
-            console.log("Mover delivering to spawn");
-            this.creep_obj.moveTo(spawn, {costMatrix: support_cost_matrix});
+        } else {
+            //drop off at closest extension or spawn with capacity
+            let production_not_full = [];
+            
+            if(extensions.length > 0) {
+                for(let ext of extensions) {
+                    if(ext.store.getFreeCapacity(RESOURCE_ENERGY) > 0) {
+                        production_not_full.push(ext);
+                    }
+                }
+            }
+
+            if(spawn.store.getFreeCapacity(RESOURCE_ENERGY) > 0) {
+                production_not_full.push(spawn);
+            }
+
+            let closest_production_not_full = this.creep_obj.findClosestByPath(production_not_full);
+
+            if (this.creep_obj.transfer(closest_production_not_full, RESOURCE_ENERGY) == ERR_NOT_IN_RANGE) {
+                this.creep_obj.moveTo(closest_production_not_full, {costMatrix: this.support_cost_matrix});
+            }
         }
     }
 
     update_data(variables) {
-        if("creeps_list" in variables) {this.creeps_list = variables["creeps_list"]};
+        if("var_creeps_list" in variables) {this.creeps_list = variables["var_creeps_list"]};
+        if("var_support_cost_matrix" in variables) {this.support_cost_matrix = variables["var_support_cost_matrix"]};
     }
 
     constructors_requesting_energy() {

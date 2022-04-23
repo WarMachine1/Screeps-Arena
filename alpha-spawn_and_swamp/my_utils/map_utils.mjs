@@ -133,6 +133,7 @@ export function check_for_structure(coords) {
 }
 
 export function local_containers_empty() {
+  let local_range = 10;
   let spawn = utils.getObjectsByPrototype(prototypes.StructureSpawn).find(i => i.my);
   let containers = utils.getObjectsByPrototype(StructureContainer);
   for( var i = 0; i < containers.length; i++){
@@ -142,6 +143,6 @@ export function local_containers_empty() {
         i--;
     }
   }
-  let closest_container = spawn.findClosestByPath(containers, {costMatrix: support_cost_matrix});
-  return getRange(spawn,closest_container) > 10;
+  let closest_container = spawn.findClosestByPath(containers);
+  return getRange(spawn,closest_container) > local_range;
 }

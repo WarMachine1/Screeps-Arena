@@ -21,47 +21,51 @@ import { support_cost_matrix } from '../main.mjs';
 import { arenaInfo } from '/game';
 
 export class general_creep {
-    constructor(creep_object) {
-      this.creep_obj = creep_object;
+  constructor(creep_object) {
+    this.creep_obj = creep_object;
+    this.status = "spawning";
+  }
+
+  update() {
+    this.update_status();
+    if(this.status != "alive") {return;}
+    this.behavior();
+  }
+
+  behavior() {
+
+  }
+
+  update_data(variables) {
+
+  }
+
+  update_status() {
+    if(this.overlapping_spawn()) {
       this.status = "spawning";
+    } else if (this.creep_obj.hits) {
+      this.status = "alive";
+    } else {
+      this.status = "dead";
     }
+  }
 
-    update() {
-      this.update_status();
-      this.behavior();
-    }
+  get_status() {
+    return this.status;
+  }
 
-    behavior() {
-
-    }
-
-    update_data(variables) {
-
-    }
-
-    update_status() {
-      if(this.overlapping_spawn()) {
-        this.status = "spawning";
-      } else if (this.creep_obj.hits) {
-        this.status = "alive";
-      } else {
-        this.status = "dead";
+  overlapping_spawn() {
+    var result = false;
+    var spawns = utils.getObjectsByPrototype(StructureSpawn).filter(i => i.my);
+    spawns.forEach(spawn => {
+        if(spawn.x === this.creep_obj.x && spawn.y === this.creep_obj.y) {
+            result = true;
       }
-    }
+    });
+    return result;
+  }
 
-    get_status() {
-      return this.status;
-    }
-
-    overlapping_spawn() {
-      var result = false;
-      var spawns = utils.getObjectsByPrototype(StructureSpawn).filter(i => i.my);
-      spawns.forEach(spawn => {
-          if(spawn.x === this.creep_obj.x && spawn.y === this.creep_obj.y) {
-              result = true;
-        }
-      });
-      return result;
-    }
-
+  my_move_to(my_target,my_cost_matrix) {
+    
+  }
 }

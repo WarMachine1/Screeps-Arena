@@ -11,15 +11,19 @@ export function generate_support_cost_matrix() {
     //clear spawn egress route
     var spawn = utils.getObjectsByPrototype(StructureSpawn).find(i => i.my);
     if (spawn && spawn.x > 50) {
-        cost.set(spawn.x - 1, spawn.y, 128);
-        if (visual_debug) { new Visual().text("x", { x: spawn.x - 1, y: spawn.y }, { color: "#ffff00" }); }
-        cost.set(spawn.x - 2, spawn.y, 128);
-        if (visual_debug) { new Visual().text("x", { x: spawn.x - 2, y: spawn.y }, { color: "#ffff00" }); }
+        cost.set(spawn.x - 1, spawn.y, 255);
+        if (visual_debug) { new Visual().text("x", { x: spawn.x - 1, y: spawn.y }, { color: "#ff0000" }); }
+        cost.set(spawn.x - 2, spawn.y, 255);
+        if (visual_debug) { new Visual().text("x", { x: spawn.x - 2, y: spawn.y }, { color: "#ff0000" }); }
+        cost.set(spawn.x - 1, spawn.y + 1, 255);
+        if (visual_debug) { new Visual().text("x", { x: spawn.x - 1, y: spawn.y + 1 }, { color: "#ff0000" }); }
     } else if (spawn) {
-        cost.set(spawn.x + 1, spawn.y, 128);
-        if (visual_debug) { new Visual().text("x", { x: spawn.x + 1, y: spawn.y }, { color: "#ffff00" }); }
-        cost.set(spawn.x + 2, spawn.y, 128);
-        if (visual_debug) { new Visual().text("x", { x: spawn.x + 2, y: spawn.y }, { color: "#ffff00" }); }
+        cost.set(spawn.x + 1, spawn.y, 255);
+        if (visual_debug) { new Visual().text("x", { x: spawn.x + 1, y: spawn.y }, { color: "#ff0000" }); }
+        cost.set(spawn.x + 2, spawn.y, 255);
+        if (visual_debug) { new Visual().text("x", { x: spawn.x + 2, y: spawn.y }, { color: "#ff0000" }); }
+        cost.set(spawn.x + 1, spawn.y + 1, 255);
+        if (visual_debug) { new Visual().text("x", { x: spawn.x + 1, y: spawn.y + 1 }, { color: "#ff0000" }); }
     }
 
     //impassible creeps
@@ -36,6 +40,14 @@ export function generate_support_cost_matrix() {
         //console.log("Structure: " + structure.x + "," + structure.y);
         cost.set(structure.x, structure.y, 255);
         if (visual_debug) { new Visual().text("x", { x: structure.x, y: structure.y }, { color: "#ff0000" }); }
+    }
+
+    //impassible construction sites
+    var construction_sites = utils.getObjectsByPrototype(ConstructionSite);
+    for (var construction_site of construction_sites) {
+        //console.log("Structure: " + structure.x + "," + structure.y);
+        cost.set(construction_site.x, construction_site.y, 255);
+        if (visual_debug) { new Visual().text("x", { x: construction_site.x, y: construction_site.y }, { color: "#ff0000" }); }
     }
 
 

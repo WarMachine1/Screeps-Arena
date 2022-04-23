@@ -73,7 +73,7 @@ function get_creep_cost(body_part_array) {
               break;
       }
   }
-  return total
+  return total;
 }
 
 function constructor_requesting() {

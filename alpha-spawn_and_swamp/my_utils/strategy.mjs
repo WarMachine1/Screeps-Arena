@@ -19,6 +19,7 @@ for (let globalKey in arenaConstants) { global[globalKey] = arenaConstants[globa
 import { mover_creep } from '../creep_classes/mover_creep.mjs';
 import { constructor_creep } from '../creep_classes/constructor_creep.mjs';
 import { defender_creep } from '../creep_classes/defender_creep.mjs';
+import { local_containers_empty } from './map_utils.mjs';
 
 
 
@@ -28,25 +29,37 @@ import { arenaInfo } from '/game';
 export class strategy {
   constructor() {
     this.map_side_multiplier = 1;
-    this.spawn_priority = ["mover","constructor","defender"];
+    this.spawn_priority = ["constructor","mover","defender"];
     // this.spawn_priority = ["mover","constructor","raider","defender","healer"];
-    this.spawn_limits = {mover:3,constructor:1,defender:100};
+    this.spawn_limits = {mover:2,constructor:0,defender:100};
     // this.spawn_limits = {mover:5,constructor:1,raider:1,defender:100,healer:1};
     this.counts = {mover:0,constructor:0,defender:0};
     // this.counts = {mover:5,constructor:1,raider:1,defender:100,healer:1};
 
+    // this.compositions = 
+    //   {mover:[CARRY,CARRY,CARRY,MOVE,MOVE,MOVE],
+    //   constructor:[MOVE,MOVE,MOVE,MOVE,MOVE,MOVE,WORK,WORK,WORK,WORK,WORK,CARRY,MOVE,MOVE],
+    //   raider:[RANGED_ATTACK,RANGED_ATTACK,MOVE,MOVE,MOVE,MOVE,MOVE,MOVE,MOVE,MOVE,MOVE,HEAL],
+    //   defender:[TOUGH,TOUGH,TOUGH,TOUGH,TOUGH,TOUGH,TOUGH,TOUGH,TOUGH,TOUGH,MOVE,MOVE,MOVE,MOVE,MOVE,ATTACK,ATTACK,ATTACK,ATTACK,ATTACK,ATTACK,ATTACK,MOVE],
+    //   healer:[HEAL,HEAL,HEAL,HEAL,MOVE,MOVE,MOVE,MOVE]};
+
     this.compositions = 
       {mover:[CARRY,CARRY,CARRY,MOVE,MOVE,MOVE],
-      constructor:[MOVE,WORK,CARRY,MOVE,MOVE],
+      constructor:[MOVE,MOVE,MOVE,MOVE,MOVE,WORK,WORK,WORK,WORK,CARRY,MOVE,MOVE],
       raider:[RANGED_ATTACK,RANGED_ATTACK,MOVE,MOVE,MOVE,MOVE,MOVE,MOVE,MOVE,MOVE,MOVE,HEAL],
-      defender:[TOUGH,TOUGH,TOUGH,TOUGH,TOUGH,TOUGH,TOUGH,TOUGH,TOUGH,TOUGH,MOVE,MOVE,MOVE,MOVE,MOVE,ATTACK,ATTACK,ATTACK,ATTACK,ATTACK,ATTACK,ATTACK,MOVE],
+      defender:[TOUGH,TOUGH,TOUGH,TOUGH,TOUGH,TOUGH,MOVE,MOVE,MOVE,ATTACK,ATTACK,ATTACK,MOVE],
       healer:[HEAL,HEAL,HEAL,HEAL,MOVE,MOVE,MOVE,MOVE]};
+
 
     this.creeps_list = [];
 
+    this.local_containers_empty = false;
+
     //strategy specific variables
+    
+
     this.rally_point = {x:0,y:0};
-    this.rally_point_x_offset = 30; //positive is towards enemy side
+    this.rally_point_x_offset = 40; //positive is towards enemy side
 
     this.swarm_achieved = false;
     this.swarm_threshold = 15;
@@ -62,8 +75,17 @@ export class strategy {
   }
 
   update() {
+    this.local_containers_empty = local_containers_empty();
+    this.update_limits();
     this.spawn_to_priority();
     this.update_strategy_data();
+  }
+
+  update_limits() {
+    if(this.local_containers_empty) {
+      this.spawn_limits["mover"] = 8;
+      this.spawn_limits["constructor"] = 1;
+    }
   }
 
   spawn_to_priority() {

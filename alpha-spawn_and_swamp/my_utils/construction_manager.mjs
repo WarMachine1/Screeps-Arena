@@ -28,7 +28,7 @@ import { arenaInfo } from '/game';
 
 export class construction_manager {
   constructor() {
-    this.ext_grid_center_x_offset = 15; //distance from center of map - positive is towards enemy spawn
+    this.ext_grid_center_x_offset = -15; //distance from center of map - positive is towards enemy spawn
     this.map_side_multiplier = 1;
     this.grid_interval = 3;
     this.grid_center = {x:50-(this.ext_grid_center_x_offset*this.map_side_multiplier), y:50};
@@ -51,7 +51,7 @@ export class construction_manager {
     this.tower_locations = [];
     
     
-    this.extension_limit = 10;
+    this.extension_limit = 5;
     this.tower_limit = 0;
 
   }
