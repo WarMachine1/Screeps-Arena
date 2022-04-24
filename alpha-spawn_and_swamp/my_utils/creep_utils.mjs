@@ -30,13 +30,6 @@ export function check_creep_spawned(creep) {
   return result;
 }
 
-function nearest_constructor_requesting(creep) {
-  var requesting_constructors = constructors.filter(function (constructor) {
-      return constructor.request_energy;
-  });
-  return creep.findClosestByPath(requesting_constructors, {costMatrix: support_cost_matrix});
-}
-
 function get_creep_cost(body_part_array) {
   var total = 0
   for(var body_part of body_part_array) {
@@ -81,13 +74,6 @@ function constructor_requesting() {
       return constructor.request_energy;
   });
   return requesting_constructors.length > 0;
-}
-
-function nearest_tower_requesting(creep) {
-  var requesting_towers = towers.filter(function (tower) {
-      return tower.request_energy;
-  });
-  return creep.findClosestByPath(requesting_towers, {costMatrix: support_cost_matrix});
 }
 
 function tower_requesting() {

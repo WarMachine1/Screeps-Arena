@@ -21,9 +21,9 @@ export default class defender_creep extends general_creep {
             }
         }
 
-        var closestEcoEnemy = creep.findClosestByPath(enemy_eco_creeps, {costMatrix: support_cost_matrix});
-        var closestEnemy = creep.findClosestByPath(enemy_creeps);
-        var closestEnemySpawn = creep.findClosestByPath(enemy_spawns, {costMatrix: support_cost_matrix});
+        var closestEcoEnemy = creep.findClosestByRange(enemy_eco_creeps, {costMatrix: support_cost_matrix});
+        var closestEnemy = creep.findClosestByRange(enemy_creeps);
+        var closestEnemySpawn = creep.findClosestByRange(enemy_spawns, {costMatrix: support_cost_matrix});
         var creeps_d = utils.getObjectsByPrototype(Creep).filter(i => i.my);
         var defenders_d = [];
 
@@ -43,16 +43,7 @@ export default class defender_creep extends general_creep {
         if(defenders_d.length > 0 || getTicks() > rush_time) {
             creep.activated = true;
         }
-        // if(closestArmedEnemy && getRange(creep,closestArmedEnemy) < 3) {
-        //     var direction = getDirection(closestArmedEnemy.x-creep.x,closestArmedEnemy.y-creep.y);
-        //     if(direction > 4) {
-        //         direction -= 4;
-        //     } else {
-        //         direction += 4;
-        //     }
-        //     creep.move(direction);
-        // } else 
-        // console.log("Tile 2: " + support_cost_matrix.get(spawn.x,spawn.y-2));
+
         if (!creep.activated) {
             creep.moveTo(spawn.x+rally_point_2["x"],spawn.y+rally_point_2["y"], [support_cost_matrix], {costMatrix: support_cost_matrix});
         } else if (closestEcoEnemy) {

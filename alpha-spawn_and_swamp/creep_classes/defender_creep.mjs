@@ -31,7 +31,8 @@ export class defender_creep extends general_creep {
         this.enemy_excursion = false;
         this.enemy_incursion = false;
         this.rally_point = {x:50,y:50};
-        this.range_to_target = 100;
+        this.default_range_to_target = 500;
+        this.range_to_target = this.default_range_to_target;
     }
 
     behavior() {
@@ -40,12 +41,6 @@ export class defender_creep extends general_creep {
         var spawn = utils.getObjectsByPrototype(StructureSpawn).find(i => i.my);
         var closestEnemy = this.creep_obj.findClosestByPath(enemy_creeps);
         var closestEnemySpawn = this.creep_obj.findClosestByPath(enemy_spawns);
-        var closestEnemyToSpawn = this.creep_obj.findClosestByPath(enemy_creeps);
-
-        //closest wounded creep
-        var creeps = utils.getObjectsByPrototype(Creep).filter(i => i.my);
-        var myDamagedCreeps = creeps.filter(i => i.hits < i.hitsMax);
-        var closestDamagedCreep = this.creep_obj.findClosestByPath(myDamagedCreeps);
 
         // console.log("!Swarm Achieved: " + !this.swarm_acheived);
         // console.log("Ticks: " + getTicks() + " Rush Time: " + this.rush_time);
@@ -53,9 +48,9 @@ export class defender_creep extends general_creep {
         // console.log("No enemy within engagement range: " + (!closestEnemy || (closestEnemy && getRange(this.creep_obj,closestEnemy) > this.engagement_range)));
         // console.log("This Rally Point: " + (this.rally_point["x"]) + "," + (this.rally_point["y"]));
         // console.log("Rally Point Abs Coords: " + (spawn.x + this.rally_point["x"]) + "," + (spawn.y + this.rally_point["y"]));
-        if (!this.swarm_acheived && getTicks() < this.rush_time && !this.enemy_armed_excursion && (!closestEnemy || (closestEnemy && getRange(this.creep_obj,closestEnemy) > this.engagement_range))) {
+        if (!this.swarm_acheived && getTicks() < this.rush_time && !this.enemy_excursion && (!closestEnemy || (closestEnemy && getRange(this.creep_obj,closestEnemy) > this.engagement_range))) {
             this.creep_obj.moveTo(spawn.x + this.rally_point["x"],spawn.y + this.rally_point["y"]);
-            this.range_to_target = 100;
+            this.range_to_target = this.default_range_to_target;
         } else if (closestEnemy && this.creep_obj.attack(closestEnemy) == ERR_NOT_IN_RANGE) {
             this.creep_obj.moveTo(closestEnemy);
             this.range_to_target = getRange(this.creep_obj,closestEnemy);
@@ -64,7 +59,7 @@ export class defender_creep extends general_creep {
             this.range_to_target = getRange(this.creep_obj,closestEnemySpawn);
         } else  if (!closestEnemy && !closestEnemySpawn) {
             this.creep_obj.moveTo(spawn.x + this.rally_point["x"],spawn.y + this.rally_point["y"]);
-            this.range_to_target = 100;
+            this.range_to_target = this.default_range_to_target;
         }
 
     }
@@ -72,8 +67,8 @@ export class defender_creep extends general_creep {
     update_data(variables) {
         if("var_swarm_achieved" in variables) {this.swarm_acheived = variables["var_swarm_achieved"]};
         if("var_engagement_range" in variables) {this.engagement_range = variables["var_engagement_range"]};
-        if("var_enemy_armed_excursion" in variables) {this.enemy_armed_excursion = variables["var_enemy_armed_excursion"]};
-        if("var_enemy_armed_incursion" in variables) {this.enemy_armed_incursion = variables["var_enemy_armed_incursion"]};
+        if("var_enemy_armed_excursion" in variables) {this.enemy_excursion = variables["var_enemy_armed_excursion"]};
+        if("var_enemy_armed_incursion" in variables) {this.enemy_incursion = variables["var_enemy_armed_incursion"]};
         if("var_rush_time" in variables) {this.rush_time = variables["var_rush_time"]};
         if("var_rally_point" in variables) {this.rally_point = variables["var_rally_point"]};
     }

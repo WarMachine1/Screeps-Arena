@@ -29,6 +29,7 @@ export class mover_creep extends general_creep {
     }
 
     behavior() {
+
         var containers = utils.getObjectsByPrototype(StructureContainer);
         var sources = utils.getObjectsByPrototype(Source);
         for( var i = 0; i < containers.length; i++){
@@ -48,7 +49,7 @@ export class mover_creep extends general_creep {
         var extensions = utils.getObjectsByPrototype(StructureExtension).filter(i => i.my);
         let requesting_constructors = this.constructors_requesting_energy();
         if(this.creep_obj.store.getUsedCapacity(RESOURCE_ENERGY) <= 0) {
-            var closest_container = this.creep_obj.findClosestByPath(containers, {costMatrix: this.support_cost_matrix});
+            var closest_container = this.creep_obj.findClosestByRange(containers, {costMatrix: this.support_cost_matrix});
             //console.log("Closest Container Location: (" + closest_container.x + "," + closest_container.y + ")")
             
             if(containers.length > 0) {
@@ -65,7 +66,7 @@ export class mover_creep extends general_creep {
         //     }
         } else if (requesting_constructors.length > 0) {
             let requesting_constructor_creeps = requesting_constructors.map(a => a.creep_obj)
-            let target_constructor = this.creep_obj.findClosestByPath(requesting_constructor_creeps, {costMatrix: this.support_cost_matrix});
+            let target_constructor = this.creep_obj.findClosestByRange(requesting_constructor_creeps, {costMatrix: this.support_cost_matrix});
             if(this.creep_obj.transfer(target_constructor, RESOURCE_ENERGY) == ERR_NOT_IN_RANGE) {
                 this.creep_obj.moveTo(target_constructor, {costMatrix: this.support_cost_matrix});
             }
@@ -85,7 +86,7 @@ export class mover_creep extends general_creep {
                 production_not_full.push(spawn);
             }
 
-            let closest_production_not_full = this.creep_obj.findClosestByPath(production_not_full);
+            let closest_production_not_full = this.creep_obj.findClosestByRange(production_not_full);
 
             if (this.creep_obj.transfer(closest_production_not_full, RESOURCE_ENERGY) == ERR_NOT_IN_RANGE) {
                 this.creep_obj.moveTo(closest_production_not_full, {costMatrix: this.support_cost_matrix});

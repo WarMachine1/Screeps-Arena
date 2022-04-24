@@ -143,6 +143,21 @@ export function local_containers_empty() {
         i--;
     }
   }
-  let closest_container = spawn.findClosestByPath(containers);
+  let closest_container = spawn.findClosestByRange(containers);
   return getRange(spawn,closest_container) > local_range;
 }
+
+// export function local_containers_energy() {
+//   let local_range = 10;
+//   let spawn = utils.getObjectsByPrototype(prototypes.StructureSpawn).find(i => i.my);
+//   let containers = utils.getObjectsByPrototype(StructureContainer);
+//   for( var i = 0; i < containers.length; i++){
+//     // console.log("Used Capacity: " + containers[i].store.getUsedCapacity())
+//     if ( containers[i].store.getUsedCapacity() == 0) {
+//         containers.splice(i, 1);
+//         i--;
+//     }
+//   }
+//   let closest_container = spawn.findClosestByRange(containers);
+//   return getRange(spawn,closest_container) > local_range;
+// }
