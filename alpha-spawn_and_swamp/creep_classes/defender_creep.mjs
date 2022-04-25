@@ -39,8 +39,8 @@ export class defender_creep extends general_creep {
         var enemy_creeps = utils.getObjectsByPrototype(Creep).filter(i => !i.my);
         var enemy_spawns = utils.getObjectsByPrototype(StructureSpawn).filter(i => !i.my);
         var spawn = utils.getObjectsByPrototype(StructureSpawn).find(i => i.my);
-        var closestEnemy = this.creep_obj.findClosestByPath(enemy_creeps);
-        var closestEnemySpawn = this.creep_obj.findClosestByPath(enemy_spawns);
+        var closestEnemy = this.creep_obj.findClosestByRange(enemy_creeps);
+        var closestEnemySpawn = this.creep_obj.findClosestByRange(enemy_spawns);
 
         // console.log("!Swarm Achieved: " + !this.swarm_acheived);
         // console.log("Ticks: " + getTicks() + " Rush Time: " + this.rush_time);
@@ -51,10 +51,15 @@ export class defender_creep extends general_creep {
         if (!this.swarm_acheived && getTicks() < this.rush_time && !this.enemy_excursion && (!closestEnemy || (closestEnemy && getRange(this.creep_obj,closestEnemy) > this.engagement_range))) {
             this.creep_obj.moveTo(spawn.x + this.rally_point["x"],spawn.y + this.rally_point["y"]);
             this.range_to_target = this.default_range_to_target;
-        } else if (closestEnemy && this.creep_obj.attack(closestEnemy) == ERR_NOT_IN_RANGE) {
-            this.creep_obj.moveTo(closestEnemy);
+        } else if (closestEnemy) { //attacking creep
+            if(this.creep_obj.rangedAttack(closestEnemy) == ERR_NOT_IN_RANGE) {
+                this.creep_obj.moveTo(closestEnemy);
+            } else if(getRange(this.creep_obj,closestEnemy) <= 2) {
+                this.creep_obj.moveTo(closestEnemy,{costMatrix: this.support_cost_matrix, flee: true, range: 3});
+            }
+            // this.creep_obj.moveTo(closestEnemy);
             this.range_to_target = getRange(this.creep_obj,closestEnemy);
-        } else if (!closestEnemy && closestEnemySpawn && this.creep_obj.attack(closestEnemySpawn) == ERR_NOT_IN_RANGE) {
+        } else if (!closestEnemy && closestEnemySpawn && this.creep_obj.rangedAttack(closestEnemySpawn) == ERR_NOT_IN_RANGE) {
             this.creep_obj.moveTo(closestEnemySpawn);
             this.range_to_target = getRange(this.creep_obj,closestEnemySpawn);
         } else  if (!closestEnemy && !closestEnemySpawn) {

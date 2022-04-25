@@ -37,19 +37,19 @@ export class healer_creep extends general_creep {
         // console.log("Number of defenders: " + this.get_number_of_defenders());
         // console.log("Enemy Excursion: " + this.enemy_excursion)
         if(myDamagedCreeps.length > 0) {
-            console.log("Proceeding to damaged creep");
+            // console.log("Proceeding to damaged creep");
             let closest_damaged_friendly = this.creep_obj.findClosestByRange(myDamagedCreeps, {costMatrix: this.support_cost_matrix});
             if(this.creep_obj.heal(closest_damaged_friendly) == ERR_NOT_IN_RANGE) {
                 this.creep_obj.moveTo(closest_damaged_friendly, {costMatrix: this.support_cost_matrix});
                 this.creep_obj.rangedHeal(closest_damaged_friendly);
             }
         } else if (this.get_number_of_defenders() > 0 && (this.swarm_acheived || getTicks() >= this.rush_time || this.enemy_excursion)) { //defenders charging -> follow defenders
-            console.log("Following defenders");
+            // console.log("Following defenders");
             let target_defender = this.get_defender_closest_to_target();
             // console.log("Target Defender: " + JSON.stringify(target_defender));
             this.creep_obj.moveTo(target_defender.creep_obj, {costMatrix: this.support_cost_matrix});
         } else {
-            console.log("Heading to rally point")
+            // console.log("Heading to rally point")
             this.creep_obj.moveTo(spawn.x + this.rally_point["x"],spawn.y + this.rally_point["y"], {costMatrix: this.support_cost_matrix});
         }
     }

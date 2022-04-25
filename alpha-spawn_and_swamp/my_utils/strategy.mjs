@@ -36,6 +36,7 @@ export class strategy {
     this.spawn_limits = {mover:5,constructor:0,defender:100, healer:0};
     // this.spawn_limits = {mover:5,constructor:1,raider:1,defender:100,healer:1};
     // this.counts = {mover:0,constructor:0,defender:0, healer: 0};
+    this.default_counts = {mover:0,constructor:0,raider:0,defender:0,healer:0};
     this.counts = {mover:0,constructor:0,raider:0,defender:0,healer:0};
 
     // this.compositions = 
@@ -49,7 +50,8 @@ export class strategy {
       {mover:[CARRY,CARRY,CARRY,MOVE,MOVE,MOVE],
       constructor:[MOVE,MOVE,MOVE,MOVE,MOVE,WORK,WORK,WORK,WORK,CARRY,MOVE,MOVE],
       raider:[RANGED_ATTACK,RANGED_ATTACK,MOVE,MOVE,MOVE,MOVE,MOVE,MOVE,MOVE,MOVE,MOVE,HEAL],
-      defender:[TOUGH,TOUGH,TOUGH,TOUGH,TOUGH,TOUGH,MOVE,MOVE,MOVE,ATTACK,ATTACK,ATTACK,MOVE],
+      // defender:[TOUGH,TOUGH,TOUGH,TOUGH,TOUGH,TOUGH,MOVE,MOVE,MOVE,ATTACK,ATTACK,ATTACK,MOVE],
+      defender:[MOVE,MOVE,MOVE,MOVE,MOVE,MOVE,MOVE,MOVE,RANGED_ATTACK,RANGED_ATTACK,MOVE],
       healer:[MOVE,HEAL,HEAL,MOVE]};
 
 
@@ -86,7 +88,6 @@ export class strategy {
   }
 
   update_limits() {
-    console.log("Local containers energy: " + this.local_containers_energy);
     if(this.local_containers_energy < 1000) {
       this.spawn_limits["mover"] = 15;
       this.spawn_limits["constructor"] = 1;
@@ -96,19 +97,11 @@ export class strategy {
   spawn_to_priority() {
     this.update_counts();
     this.spawn_limits["healer"] = Math.floor(this.counts["defender"]/3);
-    // console.log("Healer Limit: " + this.spawn_limits["healer"]);
 
     let spawn = utils.getObjectsByPrototype(prototypes.StructureSpawn).find(i => i.my);
     for(let i = 0; i < this.spawn_priority.length; i++) {
       let creep_type = this.spawn_priority[i];
-      // console.log("Creep Type: " + creep_type);
-      // console.log("Count: " + this.counts[creep_type]);
-      // console.log("Limit: " + this.spawn_limits[creep_type]);
-      // console.log("Counts: " + JSON.stringify(this.counts));
-      // console.log("Count: " + this.counts[creep_type]);
-      // console.log("Limit: " + this.spawn_limits[creep_type]);
       if(this.counts[creep_type] < this.spawn_limits[creep_type]) {
-        // console.log("Limit not reached yet for Creep Type: " + creep_type);
         var obj = spawn.spawnCreep(this.compositions[creep_type]);
         if(!obj.error) {
           switch(creep_type) {
