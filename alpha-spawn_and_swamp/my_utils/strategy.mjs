@@ -16,7 +16,7 @@ for (let globalKey in pathing) { global[globalKey] = pathing[globalKey];}
 import * as arenaConstants from '/arena';
 for (let globalKey in arenaConstants) { global[globalKey] = arenaConstants[globalKey];}
 
-import { local_containers_empty } from './map_utils.mjs';
+import { local_containers_empty, local_containers_energy } from './map_utils.mjs';
 
 import { mover_creep } from '../creep_classes/mover_creep.mjs';
 import { constructor_creep } from '../creep_classes/constructor_creep.mjs';
@@ -36,12 +36,12 @@ export class strategy {
     this.spawn_limits = {mover:5,constructor:0,defender:100, healer:0};
     // this.spawn_limits = {mover:5,constructor:1,raider:1,defender:100,healer:1};
     // this.counts = {mover:0,constructor:0,defender:0, healer: 0};
-    this.counts = {mover:5,constructor:1,raider:1,defender:100,healer:1};
+    this.counts = {mover:0,constructor:0,raider:0,defender:0,healer:0};
 
     // this.compositions = 
     //   {mover:[CARRY,CARRY,CARRY,MOVE,MOVE,MOVE],
     //   constructor:[MOVE,MOVE,MOVE,MOVE,MOVE,MOVE,WORK,WORK,WORK,WORK,WORK,CARRY,MOVE,MOVE],
-    //   raider:[RANGED_ATTACK,RANGED_ATTACK,MOVE,MOVE,MOVE,MOVE,MOVE,MOVE,MOVE,MOVE,MOVE,HEAL],
+    //   raider:[RANGED_ATTACK,RANGED_ATTACK,MOVE,MOVE,MOV E,MOVE,MOVE,MOVE,MOVE,MOVE,MOVE,HEAL],
     //   defender:[TOUGH,TOUGH,TOUGH,TOUGH,TOUGH,TOUGH,TOUGH,TOUGH,TOUGH,TOUGH,MOVE,MOVE,MOVE,MOVE,MOVE,ATTACK,ATTACK,ATTACK,ATTACK,ATTACK,ATTACK,ATTACK,MOVE],
     //   healer:[HEAL,HEAL,HEAL,HEAL,MOVE,MOVE,MOVE,MOVE]};
 
@@ -56,6 +56,7 @@ export class strategy {
     this.creeps_list = [];
 
     this.local_containers_empty = false;
+    this.local_container_energy = 0;
 
     //strategy specific variables
     
@@ -78,13 +79,15 @@ export class strategy {
 
   update() {
     this.local_containers_empty = local_containers_empty();
+    this.local_containers_energy = local_containers_energy();
     this.update_limits();
     this.spawn_to_priority();
     this.update_strategy_data();
   }
 
   update_limits() {
-    if(this.local_containers_empty) {
+    console.log("Local containers energy: " + this.local_containers_energy);
+    if(this.local_containers_energy < 1000) {
       this.spawn_limits["mover"] = 15;
       this.spawn_limits["constructor"] = 1;
     }
@@ -186,7 +189,7 @@ export class strategy {
   }
 
   update_rally_point() {
-    if(local_containers_empty()) {
+    if(this.local_containers_energy < 1000) {
       this.rally_point_x_offset = 30;
     } else {
       this.rally_point_x_offset = 5;
