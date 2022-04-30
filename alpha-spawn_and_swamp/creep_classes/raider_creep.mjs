@@ -23,9 +23,12 @@ import { general_creep } from './general_creep'
 
 import { support_cost_matrix } from '../main.mjs';
 
-export default class raider_creep extends general_creep {
+export class raider_creep extends general_creep {
     constructor(creep_object) {
-      creep_obj = creep_object
+        super(creep_object);
+        this.support_cost_matrix;
+        this.rally_point = {x:50,y:50};
+
     }
 
     behavior() {
@@ -44,44 +47,28 @@ export default class raider_creep extends general_creep {
             }
         }
 
-        var closestEcoEnemy = creep.findClosestByRange(enemy_eco_creeps, {costMatrix: support_cost_matrix});
-        var closestEnemy = creep.findClosestByRange(enemy_creeps);
-        var closestEnemySpawn = creep.findClosestByRange(enemy_spawns, {costMatrix: support_cost_matrix});
-        var creeps_d = utils.getObjectsByPrototype(Creep).filter(i => i.my);
-        var defenders_d = [];
-
-        for(var creep_d of creeps_d) {
-            if(check_creep_spawned(creep_d)) {
-                switch(creep_d.role) {
-                    case "defender":
-                        defenders_d.push(creep_d)
-                        break;
-
-                    default:
-                        break;
-                }
+        var closestEcoEnemy = this.creep_obj.findClosestByRange(enemy_eco_creeps, {costMatrix: this.support_cost_matrix, swampCost: 2});
+        var closestEnemy = this.creep_obj.findClosestByRange(enemy_creeps);
+        var closestEnemySpawn = this.creep_obj.findClosestByRange(enemy_spawns, {costMatrix: this.support_cost_matrix, swampCost: 2});
+        
+        if (closestEcoEnemy) {
+            if(this.creep_obj.rangedAttack(closestEcoEnemy)== ERR_NOT_IN_RANGE) {
+                this.creep_obj.rangedAttack(closestEnemy);
             }
-        }
-
-        if(defenders_d.length > 0 || getTicks() > rush_time) {
-            creep.activated = true;
-        }
-
-        if (!creep.activated) {
-            creep.moveTo(spawn.x+rally_point_2["x"],spawn.y+rally_point_2["y"], [support_cost_matrix], {costMatrix: support_cost_matrix});
-        } else if (closestEcoEnemy) {
-            if(creep.rangedAttack(closestEcoEnemy)== ERR_NOT_IN_RANGE) {
-                creep.rangedAttack(closestEnemy);
-            }
-            creep.moveTo(closestEcoEnemy, {costMatrix: support_cost_matrix});
+            this.creep_obj.moveTo(closestEcoEnemy, {costMatrix: this.support_cost_matrix, swampCost: 2});
         } else if (!closestEcoEnemy && closestEnemySpawn) {
-            if(creep.rangedAttack(closestEnemySpawn)== ERR_NOT_IN_RANGE) {
-                creep.rangedAttack(closestEnemy);
+            if(this.creep_obj.rangedAttack(closestEnemySpawn)== ERR_NOT_IN_RANGE) {
+                this.creep_obj.rangedAttack(closestEnemy);
             }
-            creep.moveTo(closestEnemySpawn, {costMatrix: support_cost_matrix});
+            this.creep_obj.moveTo(closestEnemySpawn, {costMatrix: this.support_cost_matrix, swampCost: 2});
         } else  if (!closestEcoEnemy && !closestEnemySpawn) {
-            creep.moveTo(spawn.x+rally_point_2["x"],spawn.y+rally_point_2["y"], {costMatrix: support_cost_matrix});
+            this.creep_obj.moveTo(spawn.x+this.rally_point["x"],spawn.y+this.rally_point["y"], {costMatrix: this.support_cost_matrix, swampCost: 2});
         }
-        creep.heal(creep);
+        this.creep_obj.heal(this.creep_obj);
+    }
+
+    update_data(variables) {
+        if("var_rally_point" in variables) {this.rally_point = variables["var_rally_point"]};
+        if("var_support_cost_matrix" in variables) {this.support_cost_matrix = variables["var_support_cost_matrix"]};
     }
 }

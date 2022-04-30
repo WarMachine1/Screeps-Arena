@@ -16,14 +16,29 @@ for (let globalKey in pathing) { global[globalKey] = pathing[globalKey];}
 import * as arenaConstants from '/arena';
 for (let globalKey in arenaConstants) { global[globalKey] = arenaConstants[globalKey];}
 
-export function loop() {
-    console.log("Test: " + BODYPART_COST[RANGED_ATTACK])
-    var myCreep = getObjectsByPrototype(Creep).find(creep => creep.my);
-    var enemyCreep = getObjectsByPrototype(Creep).find(creep => !creep.my);
 
-    if(myCreep.attack(enemyCreep) == ERR_NOT_IN_RANGE) {
-        myCreep.moveTo(enemyCreep);
+import { arenaInfo } from '/game';
+
+export function enemy_majority_attack_parts() {
+  let enemy_creeps = utils.getObjectsByPrototype(Creep).filter(i => !i.my);
+  let melee_count = 0;
+  let ranged_count = 0;
+  for(let e_creep of enemy_creeps) {
+    // console.log("Enemy Creep Body: " + JSON.stringify(e_creep.body));
+    for(let bodypart of e_creep.body) {
+      // console.log("Enemy Creep Body Part: " + JSON.stringify(bodypart));
+      if(bodypart["type"] == "attack") {
+        melee_count += 1;
+      } else if (bodypart["type"] == "ranged_attack") {
+        ranged_count += 1;
+      }
     }
+  }
 
-    console.log(JSON.stringify(searchPath(myCreep,enemyCreep)));
+  if(ranged_count > melee_count) {
+    return "ranged";
+  } else {
+    return "melee";
+  }
+
 }

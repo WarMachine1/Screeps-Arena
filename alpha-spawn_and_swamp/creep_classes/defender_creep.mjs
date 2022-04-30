@@ -49,21 +49,21 @@ export class defender_creep extends general_creep {
         // console.log("This Rally Point: " + (this.rally_point["x"]) + "," + (this.rally_point["y"]));
         // console.log("Rally Point Abs Coords: " + (spawn.x + this.rally_point["x"]) + "," + (spawn.y + this.rally_point["y"]));
         if (!this.swarm_acheived && getTicks() < this.rush_time && !this.enemy_excursion && (!closestEnemy || (closestEnemy && getRange(this.creep_obj,closestEnemy) > this.engagement_range))) {
-            this.creep_obj.moveTo(spawn.x + this.rally_point["x"],spawn.y + this.rally_point["y"]);
+            this.creep_obj.moveTo(spawn.x + this.rally_point["x"],spawn.y + this.rally_point["y"], {swampCost: 2});
             this.range_to_target = this.default_range_to_target;
         } else if (closestEnemy) { //attacking creep
             if(this.creep_obj.rangedAttack(closestEnemy) == ERR_NOT_IN_RANGE) {
-                this.creep_obj.moveTo(closestEnemy);
+                this.creep_obj.moveTo(closestEnemy, {swampCost: 2});
             } else if(getRange(this.creep_obj,closestEnemy) <= 2) {
-                this.creep_obj.moveTo(closestEnemy,{costMatrix: this.support_cost_matrix, flee: true, range: 3});
+                this.creep_obj.moveTo(closestEnemy,{costMatrix: this.support_cost_matrix, swampCost: 2, flee: true, range: 3});
             }
             // this.creep_obj.moveTo(closestEnemy);
             this.range_to_target = getRange(this.creep_obj,closestEnemy);
         } else if (!closestEnemy && closestEnemySpawn && this.creep_obj.rangedAttack(closestEnemySpawn) == ERR_NOT_IN_RANGE) {
-            this.creep_obj.moveTo(closestEnemySpawn);
+            this.creep_obj.moveTo(closestEnemySpawn, {swampCost: 2});
             this.range_to_target = getRange(this.creep_obj,closestEnemySpawn);
         } else  if (!closestEnemy && !closestEnemySpawn) {
-            this.creep_obj.moveTo(spawn.x + this.rally_point["x"],spawn.y + this.rally_point["y"]);
+            this.creep_obj.moveTo(spawn.x + this.rally_point["x"],spawn.y + this.rally_point["y"], {swampCost: 2});
             this.range_to_target = this.default_range_to_target;
         }
 

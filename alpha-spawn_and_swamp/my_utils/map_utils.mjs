@@ -159,3 +159,28 @@ export function local_containers_energy() {
   }
   return total_energy;
 }
+
+export function extensions_full() {
+  let result = true;
+  let extensions = utils.getObjectsByPrototype(StructureExtension).filter(i => i.my);
+  for(let e of extensions) {
+    if(e.store.getFreeCapacity(RESOURCE_ENERGY)) {
+      result = false;
+    }
+  }
+  if(extensions.length <= 0) {
+    result = false;
+  }
+  return result;
+}
+
+export function middle_neutral_extensions_mostly_full() {
+  let min_energy_stored = 1800;
+  let neutral_containers = utils.getObjectsByPrototype(StructureContainer).filter(i => !i.my);
+  let middle_containers_full = neutral_containers.filter(function (c) {
+    return c.x >= 15 &&
+          c.x <= 85 &&
+          c.store.energy >= min_energy_stored;
+  });
+  return middle_containers_full;
+}
