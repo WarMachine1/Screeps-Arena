@@ -32,6 +32,7 @@ import { general_creep } from './creep_classes/general_creep.mjs';
 import { strategy } from './my_utils/strategy.mjs';
 import { generate_support_cost_matrix } from './generate_support_cost_matrix.mjs';
 import { construction_manager } from './my_utils/construction_manager.mjs';
+import { logger } from './my_utils/logger.mjs';
 
 
 
@@ -43,6 +44,8 @@ let creeps_list = [];
 
 let this_strategy = new strategy();
 let this_construction_manager = new construction_manager();
+let this_logger = new logger();
+
 
 export var support_cost_matrix = generate_support_cost_matrix();
 export var visual_debug = false;
@@ -53,6 +56,7 @@ export function loop() {
 
     creeps_list = this_strategy.get_creeps_list();
     this_strategy.update();
+    this_logger.update();
     update_creeps();
     this_construction_manager.update();
     

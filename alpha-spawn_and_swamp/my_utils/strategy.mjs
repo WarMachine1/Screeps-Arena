@@ -124,9 +124,9 @@ export class strategy {
 
   update_limits() {
     if(this.local_containers_energy < this.local_energy_threshold) {
-      this.spawn_limits["mover"] = 5;
+      this.spawn_limits["mover"] = 8;
       this.spawn_limits["constructor"] = 1;
-      this.spawn_limits["raider"] = 0;
+      this.spawn_limits["raider"] = 1;
     }
   }
 

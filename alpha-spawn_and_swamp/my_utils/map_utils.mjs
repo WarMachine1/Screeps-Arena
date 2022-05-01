@@ -208,13 +208,14 @@ export function extensions_full() {
   return result;
 }
 
-export function middle_neutral_containers_mostly_full() {
+export function new_middle_neutral_containers_mostly_full() {
   let min_energy_stored = 1900;
   let neutral_containers = utils.getObjectsByPrototype(StructureContainer).filter(i => !i.my);
   let middle_containers_full = neutral_containers.filter(function (c) {
     return c.x >= 15 &&
           c.x <= 85 &&
-          c.store.energy > min_energy_stored;
+          c.store.energy > min_energy_stored &&
+          c.ticksToDecay > 50;
   });
   return middle_containers_full;
 }
