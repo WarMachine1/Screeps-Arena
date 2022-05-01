@@ -20,50 +20,180 @@ import { general_creep } from './general_creep'
 
 import { support_cost_matrix } from '../main.mjs';
 
-import { middle_neutral_extensions_mostly_full, nearest_buildable_tile } from '../my_utils/map_utils.mjs';
+import { middle_neutral_containers_mostly_full, nearest_buildable_tile, nearest_buildable_tile_exclude_OG_tile } from '../my_utils/map_utils.mjs';
 
 export class constructor_creep extends general_creep {
     constructor(creep_object) {
         super(creep_object);
+        this.state_machine_status = "build_regular";
+        this.container_construction_site;
+        this.target_neutral_container;
+        this.target_my_container;
         this.request_energy = false;
         this.support_cost_matrix;
         this.grid_center_local_range = 10;
         this.grid_center = {x:50,y:50};
+        this.container_construction_site_coords;
+        this.finished_building_container = false;
+        this.found_container = false;
+        
     }
 
     behavior() {
-        //console.log("Constructor request status: " + this.request_energy);
-        // console.log("Constructor Behavior");
+        this.update_state();
+        console.log("Constructor State: " + this.state_machine_status);
+        switch(this.state_machine_status) {
+            case "build_regular":
+                this.behavior_build_regular();
+                break;
+
+            case "searching_for_local_container":
+                this.behavior_searching_for_local_container();
+                break;
+
+            case "build_containers":
+                this.behavior_build_containers();
+                break;
+
+            case "transfer":
+                this.behavior_transfer();
+                break;
+
+            default:
+                break;
+        }
+
+    }
+
+    update_state() {
+        let construction_sites = utils.getObjectsByPrototype(ConstructionSite).filter(i => i.my); 
+        switch(this.state_machine_status) {
+            
+            case "build_regular": 
+                let no_assigned_construction_sites = construction_sites.length <= 0;
+                if(no_assigned_construction_sites) { 
+                    this.state_machine_status = "searching_for_local_container";
+                }
+                break;
+            
+            case "searching_for_local_container":
+                let nearest_neutral_container_full = findClosestByRange(this.grid_center,middle_neutral_containers_mostly_full());
+                let no_container_in_range = getRange(this.grid_center,nearest_neutral_container_full) > this.grid_center_local_range;
+                let non_container_construction_sites = construction_sites.length > 0;
+
+                if(this.found_container && this.container_construction_site) {
+                    this.state_machine_status = "build_containers";
+                    this.found_container = false;;
+                } else if( no_container_in_range && non_container_construction_sites) { 
+                    this.state_machine_status = "build_regular";
+                    this.found_container = false;
+                    this.container_construction_site = undefined;
+                }
+                break;
+
+            case "build_containers":
+
+                if( this.finished_building_container && this.target_my_container ) {
+                    this.state_machine_status = "transfer";
+                    this.finished_building_container = false;
+                }
+                break;
+
+            case "transfer":
+                let neutral_container_empty = this.target_neutral_container.store.getUsedCapacity(RESOURCE_ENERGY) <= 0;
+                let no_stored_energy = this.creep_obj.store.getUsedCapacity(RESOURCE_ENERGY) <= 0;
+
+                if( neutral_container_empty && no_stored_energy ) {
+                    this.state_machine_status = "build_regular";
+                    this.target_my_container = undefined;
+                    this.container_construction_site = undefined;
+                }
+                break;
+
+            default:
+                break;
+        }
+    }
+
+    behavior_build_regular() {
         let construction_sites = utils.getObjectsByPrototype(ConstructionSite).filter(i => i.my);
-        // console.log("Construction Sites: " + JSON.stringify(construction_sites));
-        
-        // console.log("Closest Construction Site: " + JSON.stringify(closest_construction_site));
-        // getRange(this.creep_obj,closest_construction_site) > 3 || 
-  
-        if(construction_sites.length > 0) {
+
+        if(construction_sites.length > 0) { //non-container construction sites exist and not building construction site
             let closest_construction_site = this.creep_obj.findClosestByRange(construction_sites);
-            // console.log("Closest Construction Site: " + JSON.stringify(closest_construction_site));
-            // console.log("Cost Matrix Path: " + JSON.stringify(searchPath(this.creep_obj,closest_construction_site, {costMatrix: this.support_cost_matrix})));
             if(getRange(this.creep_obj,closest_construction_site) > 2) {
-                this.creep_obj.moveTo(closest_construction_site, {costMatrix: this.support_cost_matrix});
+                this.creep_obj.moveTo(closest_construction_site, {costMatrix: this.support_cost_matrix, swampCost: 3});
                 this.request_energy = this.creep_obj.store.getFreeCapacity(RESOURCE_ENERGY) > 0;
             } else {
                 this.creep_obj.build(closest_construction_site);
                 this.request_energy = true;
             }
-        } else { //find nearby containers, build new containers adjacent, and transfer energy to my container
-            this.request_energy = false;
-            let nearest_neutral_container_full = this.grid_center.findClosestByRange(middle_neutral_extensions_mostly_full());
-            if(getRange(this.creep_obj,nearest_neutral_container_full < this.grid_center_local_range)) {
-                let closest_construction_site_to_container = nearest_neutral_container_full.findClosestByRange(construction_sites);
-                if(getRange(nearest_neutral_container_full,closest_construction_site_to_container) > 2) {
-                    let viable_location = nearest_buildable_tile(this.extension_locations[i]);
-                    if(!("err" in viable_location)) {
-                        utils.createConstructionSite(viable_location["x"],viable_location["y"], StructureContainer);
-                    }
+        }
+    }
+
+    behavior_searching_for_local_container() {
+        this.request_energy = false;
+        let nearest_neutral_container_full = findClosestByRange(this.grid_center,middle_neutral_containers_mostly_full());
+        if(getRange(this.grid_center,nearest_neutral_container_full) < this.grid_center_local_range) {
+            let viable_location = nearest_buildable_tile_exclude_OG_tile(nearest_neutral_container_full);
+            console.log("Viable location: " + JSON.stringify(viable_location));
+            if(!("err" in viable_location)) {
+                this.target_neutral_container = nearest_neutral_container_full;
+                this.container_construction_site = utils.createConstructionSite(viable_location["x"],viable_location["y"], StructureContainer).object;
+                this.construction_site_coords = {x:viable_location["x"],y:viable_location["y"]};
+                this.found_container = true;
+            }
+        }
+        this.creep_obj.moveTo(this.grid_center);
+    }
+
+    behavior_build_containers() {
+        //create construction site if non-existent
+        this.request_energy = false;
+        console.log("Running build_containers behavior");
+
+        console.log("construction site coords: " + JSON.stringify(this.construction_site_coords));
+        let container_completed = this.find_my_container_at_coords(this.construction_site_coords);
+        console.log("container at construction site coords: " + JSON.stringify(container_completed));
+        if(container_completed) {
+            this.finished_building_container = true;
+            this.target_my_container = container_completed;
+        } else {
+            if(this.creep_obj.store.getUsedCapacity(RESOURCE_ENERGY) <= 0) { //no energy => withdraw from target neutral container
+                if(this.creep_obj.withdraw(this.target_neutral_container, RESOURCE_ENERGY) == ERR_NOT_IN_RANGE) {
+                    this.creep_obj.moveTo(this.target_neutral_container, {costMatrix: this.support_cost_matrix, swampCost: 3});
+                }
+            } else {
+                if(getRange(this.creep_obj,this.container_construction_site) > 2) {
+                    this.creep_obj.moveTo(this.container_construction_site, {costMatrix: this.support_cost_matrix, swampCost: 3});
+                } else {
+                    this.creep_obj.build(this.container_construction_site);
                 }
             }
         }
+    }
+
+    behavior_transfer() {
+        this.request_energy = false;
+        if(this.creep_obj.store.getUsedCapacity(RESOURCE_ENERGY) <= 0) { //no energy => withdraw from target neutral container
+            if(this.creep_obj.withdraw(this.target_neutral_container, RESOURCE_ENERGY) == ERR_NOT_IN_RANGE) {
+                this.creep_obj.moveTo(this.target_neutral_container, {costMatrix: this.support_cost_matrix, swampCost: 3});
+            }
+        } else {
+            if(this.creep_obj.transfer(this.target_my_container, RESOURCE_ENERGY) == ERR_NOT_IN_RANGE) {
+                this.creep_obj.moveTo(this.target_my_container, {costMatrix: this.support_cost_matrix, swampCost: 3});
+            }
+        }
+    }
+
+    find_my_container_at_coords(coords) {
+        let result_container;
+        let my_containers = utils.getObjectsByPrototype(StructureContainer);
+        for(let c of my_containers) {
+            if(c.x == coords["x"] && c.y == coords["y"]) {
+                result_container = c;
+            }
+        }
+        return result_container;
     }
 
     update_data(variables) {

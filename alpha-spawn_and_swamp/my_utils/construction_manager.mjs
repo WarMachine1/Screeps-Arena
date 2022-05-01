@@ -28,7 +28,7 @@ import { arenaInfo } from '/game';
 
 export class construction_manager {
   constructor() {
-    this.container_construction_site ;
+    
 
     this.extension_limit = 8;
     this.extension_goal = 8;
@@ -75,8 +75,6 @@ export class construction_manager {
       this.extension_limit += 1;
     }
 
-    console.log("Extensions full: " + extensions_full());
-    console.log("No construction sites: " + no_construction_sites)
     if(extensions_full() && no_construction_sites) {
       this.extension_goal += 1;
     }

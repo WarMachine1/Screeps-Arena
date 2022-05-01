@@ -53,7 +53,7 @@ export class strategy {
 
     this.compositions = 
       {mover:{WORK:0,MOVE:1,CARRY:1,ATTACK:0,RANGED_ATTACK:0,HEAL:0,TOUGH:0},
-      constructor:{WORK:1,MOVE:6,CARRY:1,ATTACK:0,RANGED_ATTACK:0,HEAL:0,TOUGH:0},
+      constructor:{WORK:1,MOVE:6,CARRY:2,ATTACK:0,RANGED_ATTACK:0,HEAL:0,TOUGH:0},
       raider:{WORK:0,MOVE:10,CARRY:0,ATTACK:0,RANGED_ATTACK:1,HEAL:1,TOUGH:0},
       defender:{WORK:0,MOVE:5,CARRY:0,ATTACK:0,RANGED_ATTACK:1,HEAL:0,TOUGH:0},
       healer:{WORK:0,MOVE:1,CARRY:0,ATTACK:0,RANGED_ATTACK:0,HEAL:1,TOUGH:0}};
@@ -82,7 +82,7 @@ export class strategy {
     this.swarm_achieved = false;
     this.swarm_threshold = 15;
     this.engagement_range = 15;
-    this.rush_time = 1300;
+    this.rush_time = 1600;
 
     this.incursion_threshold = 15; //distance from my side of map
     this.excursion_threshold = 15; //distance from opponent's side of map
@@ -90,7 +90,7 @@ export class strategy {
     this.enemy_armed_excursion = false;
     this.enemy_armed_incursion = false;
 
-    this.grid_center_local_range = 20;
+    this.grid_center_local_range = 25;
 
   }
 
@@ -126,7 +126,7 @@ export class strategy {
     if(this.local_containers_energy < this.local_energy_threshold) {
       this.spawn_limits["mover"] = 5;
       this.spawn_limits["constructor"] = 1;
-      this.spawn_limits["raider"] = 1;
+      this.spawn_limits["raider"] = 0;
     }
   }
 
@@ -229,8 +229,8 @@ export class strategy {
   }
 
   update_rally_point() {
-    if(this.local_containers_energy < 1000) {
-      this.rally_point_x_offset = 45;
+    if(this.local_containers_energy < this.local_energy_threshold) {
+      this.rally_point_x_offset = 60;
     } else {
       this.rally_point_x_offset = 5;
     }

@@ -109,6 +109,40 @@ export function nearest_buildable_tile(coords) {
   return result;
 }
 
+export function nearest_buildable_tile_exclude_OG_tile(coords) {
+  let result;
+  let queue = [];
+  let explored = [...Array(100)].map(e => Array(100).fill(false));
+  // console.log("Nearest Buildable Tile ran on: " + JSON.stringify(coords));
+  explored[coords["x"]][coords["y"]] = true;
+  queue.push({x: coords["x"]+1,y: coords["y"]});
+  queue.push({x: coords["x"]-1,y: coords["y"]});
+  queue.push({x: coords["x"],y: coords["y"]+1});
+  queue.push({x: coords["x"],y: coords["y"]-1});
+  while(queue.length > 0) {
+    let current_coord = queue.shift();
+    if(getTerrainAt({ x: current_coord["x"], y: current_coord["y"] }) != 1) {
+      if(check_for_structure(current_coord)) {
+        result = {x: current_coord["x"], y: current_coord["y"], err: 1};
+      } else {
+        result = {x: current_coord["x"], y: current_coord["y"]};
+      }
+      break;
+    }
+
+    if(check_in_board(current_coord) && !explored[current_coord["x"]][current_coord["y"]]) {
+      explored[current_coord["x"]][current_coord["y"]] = true;
+      queue.push({x: current_coord["x"]+1,y: current_coord["y"]});
+      queue.push({x: current_coord["x"]-1,y: current_coord["y"]});
+      queue.push({x: current_coord["x"],y: current_coord["y"]+1});
+      queue.push({x: current_coord["x"],y: current_coord["y"]-1});
+    }
+  }
+  // console.log("Result of nearest buildable: " + JSON.stringify(result));
+  return result;
+}
+
+
 function check_in_board(coord) {
   return coord["x"] >= 0 && coord["x"] < 100 && coord["y"] >= 0 && coord["y"] < 100;
 }
@@ -174,13 +208,13 @@ export function extensions_full() {
   return result;
 }
 
-export function middle_neutral_extensions_mostly_full() {
-  let min_energy_stored = 1800;
+export function middle_neutral_containers_mostly_full() {
+  let min_energy_stored = 1900;
   let neutral_containers = utils.getObjectsByPrototype(StructureContainer).filter(i => !i.my);
   let middle_containers_full = neutral_containers.filter(function (c) {
     return c.x >= 15 &&
           c.x <= 85 &&
-          c.store.energy >= min_energy_stored;
+          c.store.energy > min_energy_stored;
   });
   return middle_containers_full;
 }
