@@ -18,6 +18,8 @@ for (let globalKey in arenaConstants) { global[globalKey] = arenaConstants[globa
 
 import { support_cost_matrix } from '../main.mjs';
 
+import { enemy_armed_creeps, enemy_heal_creeps } from '../my_utils/map_utils.mjs';
+
 import { arenaInfo } from '/game';
 
 export class general_creep {
@@ -65,7 +67,72 @@ export class general_creep {
     return result;
   }
 
-  my_move_to(my_target,my_cost_matrix) {
+  enemy_armed_creep_in_range(range) {
+    let e_armed_creeps = enemy_armed_creeps();
+    let result = false;
+    for(let creep of e_armed_creeps) {
+      if(getRange(this.creep_obj,creep) <= range) {
+        result = true;
+      }
+    }
+    return result;
+  }
+
+  get_move_part_count() {
+    let body = this.creep_obj.body;
+    let non_move_or_carry_parts_count = 0;
+    let move_parts_count = 0;
+    for(let part of body) {
+      if(part["type"] == "move") {
+        move_parts_count += 1;
+      } else if (part["type"] != "carry") {
+        non_move_or_carry_parts_count += 1;
+      }
+    }
+    return move_parts_count;
+  }
+
+  get_non_carry_or_move_part_count() {
+    let body = this.creep_obj.body;
+    let non_move_or_carry_parts_count = 0;
+    let move_parts_count = 0;
+    for(let part of body) {
+      if(part["type"] == "move") {
+        move_parts_count += 1;
+      } else if (part["type"] != "carry") {
+        non_move_or_carry_parts_count += 1;
+      }
+    }
+    return non_move_or_carry_parts_count;
+  }
+
+  get_work_part_count() {
+    let body = this.creep_obj.body;
+    let work_parts_count = 0;
+    for(let part of body) {
+      if(part["type"] == "work") {
+        work_parts_count += 1;
+      }
+    }
+    return work_parts_count;
+  }
+
+  ticks_to_reach(pos,opts) {
+    let path = searchPath(this.creep_obj,pos,opts).path;
+    let ticks = 0;
+    let move_parts = this.get_move_part_count();
+    let non_carry_or_move_parts = this.get_non_carry_or_move_part_count();
     
+    for(let tile of path) {
+      let tile_cost = 2;
+      if(getTerrainAt(tile) == TERRAIN_SWAMP) {
+        tile_cost = 10;
+      }
+      let fatigue_generated = tile_cost*non_carry_or_move_parts;
+      let tile_ticks = Math.ceil(fatigue_generated/(move_parts*2));
+      ticks += tile_ticks;
+    }
+
+    return ticks;
   }
 }

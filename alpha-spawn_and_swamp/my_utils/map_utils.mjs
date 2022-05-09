@@ -80,6 +80,62 @@ export function enemy_armed_excursion() {
 
 }
 
+export function enemy_heal_creeps() {
+  var enemy_creeps = utils.getObjectsByPrototype(Creep).filter(i => !i.my);
+
+  var enemy_heal_creeps = [];
+
+  for(var e_creep of enemy_creeps) {
+      if(e_creep.body.some(bodyPart => bodyPart.type == HEAL)) {
+          enemy_heal_creeps.push(e_creep);
+      }
+  }
+
+  return enemy_heal_creeps;
+}
+
+export function enemy_armed_creeps() {
+  let enemy_creeps = utils.getObjectsByPrototype(Creep).filter(i => !i.my);
+
+  let enemy_armed_creeps = [];
+
+  for(let e_creep of enemy_creeps) {
+      if(e_creep.body.some(bodyPart => bodyPart.type == ATTACK) || e_creep.body.some(bodyPart => bodyPart.type == RANGED_ATTACK)) {
+          enemy_armed_creeps.push(e_creep);
+      }
+  }
+
+  return enemy_armed_creeps;
+}
+
+export function my_armed_creeps() {
+  let my_creeps = utils.getObjectsByPrototype(Creep).filter(i => i.my);
+
+  let my_armed_creeps = [];
+
+  for(let e_creep of my_creeps) {
+      if(e_creep.body.some(bodyPart => bodyPart.type == ATTACK) || e_creep.body.some(bodyPart => bodyPart.type == RANGED_ATTACK)) {
+          my_armed_creeps.push(e_creep);
+      }
+  }
+
+  return my_armed_creeps;
+}
+
+export function my_heal_creeps() {
+  var my_creeps = utils.getObjectsByPrototype(Creep).filter(i => i.my);
+
+  var my_heal_creeps = [];
+
+  for(var e_creep of my_creeps) {
+      if(e_creep.body.some(bodyPart => bodyPart.type == HEAL)) {
+          my_heal_creeps.push(e_creep);
+      }
+  }
+
+  return my_heal_creeps;
+}
+
 export function nearest_buildable_tile(coords) {
   let result;
   let queue = [];
@@ -88,12 +144,37 @@ export function nearest_buildable_tile(coords) {
   queue.push({x: coords["x"],y: coords["y"]});
   while(queue.length > 0) {
     let current_coord = queue.shift();
-    if(getTerrainAt({ x: current_coord["x"], y: current_coord["y"] }) != 1) {
+    if(getTerrainAt(current_coord) != 1) {
       if(check_for_structure(current_coord)) {
         result = {x: current_coord["x"], y: current_coord["y"], err: 1};
       } else {
         result = {x: current_coord["x"], y: current_coord["y"]};
       }
+      break;
+    }
+
+    if(check_in_board(current_coord) && !explored[current_coord["x"]][current_coord["y"]]) {
+      explored[current_coord["x"]][current_coord["y"]] = true;
+      queue.push({x: current_coord["x"]+1,y: current_coord["y"]});
+      queue.push({x: current_coord["x"]-1,y: current_coord["y"]});
+      queue.push({x: current_coord["x"],y: current_coord["y"]+1});
+      queue.push({x: current_coord["x"],y: current_coord["y"]-1});
+    }
+  }
+  // console.log("Result of nearest buildable: " + JSON.stringify(result));
+  return result;
+}
+
+export function nearest_buildable_tile_structures_include(coords) {
+  let result;
+  let queue = [];
+  let explored = [...Array(100)].map(e => Array(100).fill(false));
+  // console.log("Nearest Buildable Tile ran on: " + JSON.stringify(coords));
+  queue.push({x: coords["x"],y: coords["y"]});
+  while(queue.length > 0) {
+    let current_coord = queue.shift();
+    if(getTerrainAt(current_coord) != 1 && !check_for_structure(current_coord)) {
+      result = {x: current_coord["x"], y: current_coord["y"]};
       break;
     }
 
@@ -121,7 +202,7 @@ export function nearest_buildable_tile_exclude_OG_tile(coords) {
   queue.push({x: coords["x"],y: coords["y"]-1});
   while(queue.length > 0) {
     let current_coord = queue.shift();
-    if(getTerrainAt({ x: current_coord["x"], y: current_coord["y"] }) != 1) {
+    if(getTerrainAt(current_coord) != 1) {
       if(check_for_structure(current_coord)) {
         result = {x: current_coord["x"], y: current_coord["y"], err: 1};
       } else {
@@ -142,6 +223,35 @@ export function nearest_buildable_tile_exclude_OG_tile(coords) {
   return result;
 }
 
+export function nearest_buildable_tile_exclude_OG_tile_structures_include(coords) {
+  let result;
+  let queue = [];
+  let explored = [...Array(100)].map(e => Array(100).fill(false));
+  // console.log("Nearest Buildable Tile ran on: " + JSON.stringify(coords));
+  explored[coords["x"]][coords["y"]] = true;
+  queue.push({x: coords["x"]+1,y: coords["y"]});
+  queue.push({x: coords["x"]-1,y: coords["y"]});
+  queue.push({x: coords["x"],y: coords["y"]+1});
+  queue.push({x: coords["x"],y: coords["y"]-1});
+  while(queue.length > 0) {
+    let current_coord = queue.shift();
+    if(getTerrainAt(current_coord) != 1 && !check_for_structure(current_coord)) {
+      result = {x: current_coord["x"], y: current_coord["y"]};
+      break;
+    }
+    
+
+    if(check_in_board(current_coord) && !explored[current_coord["x"]][current_coord["y"]]) {
+      explored[current_coord["x"]][current_coord["y"]] = true;
+      queue.push({x: current_coord["x"]+1,y: current_coord["y"]});
+      queue.push({x: current_coord["x"]-1,y: current_coord["y"]});
+      queue.push({x: current_coord["x"],y: current_coord["y"]+1});
+      queue.push({x: current_coord["x"],y: current_coord["y"]-1});
+    }
+  }
+  // console.log("Result of nearest buildable: " + JSON.stringify(result));
+  return result;
+}
 
 function check_in_board(coord) {
   return coord["x"] >= 0 && coord["x"] < 100 && coord["y"] >= 0 && coord["y"] < 100;
@@ -163,6 +273,17 @@ export function check_for_structure(coords) {
     }
   }
   // console.log("Structure at " + JSON.stringify(coords) + ": " + result);
+  return result;
+}
+
+export function check_for_creep(coords) {
+  let result = false;
+  var creeps = utils.getObjectsByPrototype(Structure);
+  for (var creep of creeps) {
+      if(creep.x == coords["x"] && creep.y == coords["y"]) {
+        result = true;
+      }
+  }
   return result;
 }
 
@@ -216,6 +337,19 @@ export function new_middle_neutral_containers_mostly_full() {
           c.x <= 85 &&
           c.store.energy > min_energy_stored &&
           c.ticksToDecay > 50;
+  });
+  return middle_containers_full;
+}
+
+export function new_center_neutral_containers_mostly_full() {
+  let min_energy_stored = 1900;
+  let neutral_containers = utils.getObjectsByPrototype(StructureContainer).filter(i => !i.my);
+  let middle_containers_full = neutral_containers.filter(function (c) {
+    return c.x >= 15 &&
+          c.x <= 85 &&
+          c.y >= 15 &&
+          c.y <= 85 &&
+          c.store.energy > min_energy_stored;
   });
   return middle_containers_full;
 }

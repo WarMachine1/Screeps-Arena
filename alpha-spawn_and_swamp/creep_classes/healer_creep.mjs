@@ -18,6 +18,8 @@ for (let globalKey in arenaConstants) { global[globalKey] = arenaConstants[globa
 
 import { general_creep } from './general_creep'
 
+import { enemy_armed_creeps, enemy_heal_creeps } from '../my_utils/map_utils.mjs';
+
 export class healer_creep extends general_creep {
     constructor(creep_object) {
         super(creep_object);
@@ -33,13 +35,23 @@ export class healer_creep extends general_creep {
     behavior() {
         let spawn = utils.getObjectsByPrototype(StructureSpawn).find(i => i.my);
         let creeps = utils.getObjectsByPrototype(Creep).filter(i => i.my);
-        let myDamagedCreeps = creeps.filter(i => i.hits < i.hitsMax);  
-        // console.log("Number of defenders: " + this.get_number_of_defenders());
-        // console.log("Enemy Excursion: " + this.enemy_excursion)
-        if(myDamagedCreeps.length > 0) {
+        let my_damaged_creeps = creeps.filter(i => i.hits < i.hitsMax);
+        let e_armed_creeps = enemy_armed_creeps();
+        let closest_armed_enemy = this.creep_obj.findClosestByRange(e_armed_creeps);
+
+        if(my_damaged_creeps.length > 0) {
             // console.log("Proceeding to damaged creep");
-            let closest_damaged_friendly = this.creep_obj.findClosestByRange(myDamagedCreeps, {costMatrix: this.support_cost_matrix});
-            if(this.creep_obj.heal(closest_damaged_friendly) == ERR_NOT_IN_RANGE) {
+            let closest_damaged_friendly = this.creep_obj.findClosestByRange(my_damaged_creeps, {costMatrix: this.support_cost_matrix});
+            
+            if(closest_armed_enemy && getRange(this.creep_obj,closest_armed_enemy) <= 2) {
+                let goals = [];
+                e_armed_creeps.forEach(enemy_armed_creep=> goals.push({ "pos": enemy_armed_creep, "range": 3 }));
+                let path = searchPath(this.creep_obj, goals, { costMatrix: this.support_cost_matrix, flee: true, swampCost: 2 });
+                this.creep_obj.moveTo(path.path[0]);
+                if(this.creep_obj.heal(closest_damaged_friendly) == ERR_NOT_IN_RANGE) {
+                    this.creep_obj.rangedHeal(closest_damaged_friendly);
+                }
+            } else if(this.creep_obj.heal(closest_damaged_friendly) == ERR_NOT_IN_RANGE) {
                 this.creep_obj.moveTo(closest_damaged_friendly, {costMatrix: this.support_cost_matrix});
                 this.creep_obj.rangedHeal(closest_damaged_friendly);
             }

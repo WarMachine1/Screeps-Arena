@@ -25,6 +25,7 @@ import { constructor_creep } from '../creep_classes/constructor_creep.mjs';
 import { defender_creep } from '../creep_classes/defender_creep.mjs';
 import { healer_creep } from '../creep_classes/healer_creep.mjs';
 import { raider_creep } from '../creep_classes/raider_creep.mjs';
+import { minuteman_creep } from '../creep_classes/minuteman_creep.mjs';
 
 
 
@@ -34,13 +35,10 @@ import { arenaInfo } from '/game';
 export class strategy {
   constructor() {
     this.map_side_multiplier = 1;
-    this.spawn_priority = ["constructor","raider","mover","healer","defender"];
+    this.spawn_priority = ["minuteman","mover","constructor","raider","healer","defender"];
     // this.spawn_priority = ["mover","constructor","raider","defender","healer"];
-    this.spawn_limits = {mover:3,constructor:0,raider:0,defender:100, healer:0};
-    // this.spawn_limits = {mover:5,constructor:1,raider:1,defender:100,healer:1};
-    // this.counts = {mover:0,constructor:0,defender:0, healer: 0};
-    // this.counts = {mover:0,constructor:0,raider:0,defender:0,healer:0};
-    this.counts = {mover:0,constructor:0,raider:0,defender:0,healer:0};
+    this.spawn_limits = {minuteman:0,mover:2,constructor:1,raider:0,defender:100, healer:0};
+    this.counts = {minuteman:0,mover:0,constructor:0,raider:0,defender:0,healer:0};
 
     // this.compositions = 
     //   {mover:[CARRY,CARRY,CARRY,MOVE,MOVE,MOVE],
@@ -52,13 +50,15 @@ export class strategy {
     this.enemy_majority_weapons = "melee";
 
     this.compositions = 
-      {mover:{WORK:0,MOVE:1,CARRY:1,ATTACK:0,RANGED_ATTACK:0,HEAL:0,TOUGH:0},
-      constructor:{WORK:1,MOVE:6,CARRY:2,ATTACK:0,RANGED_ATTACK:0,HEAL:0,TOUGH:0},
+      { minuteman:{WORK:0,MOVE:1,CARRY:0,ATTACK:0,RANGED_ATTACK:4,HEAL:1,TOUGH:0},
+      mover:{WORK:0,MOVE:5,CARRY:1,ATTACK:0,RANGED_ATTACK:0,HEAL:0,TOUGH:0},
+      constructor:{CARRY:3,WORK:1,MOVE:5,ATTACK:0,RANGED_ATTACK:0,HEAL:0,TOUGH:0},
       raider:{WORK:0,MOVE:10,CARRY:0,ATTACK:0,RANGED_ATTACK:1,HEAL:1,TOUGH:0},
       defender:{WORK:0,MOVE:5,CARRY:0,ATTACK:0,RANGED_ATTACK:1,HEAL:0,TOUGH:0},
       healer:{WORK:0,MOVE:1,CARRY:0,ATTACK:0,RANGED_ATTACK:0,HEAL:1,TOUGH:0}};
 
     this.max_creep_cost = 1000;
+    this.max_movers = 7;
 
     // this.compositions = 
     //   {mover:[CARRY,CARRY,CARRY,MOVE,MOVE,MOVE],
@@ -74,15 +74,15 @@ export class strategy {
     this.local_container_energy = 0;
 
     //strategy specific variables
-    this.local_energy_threshold = 1500; 
+    this.local_energy_threshold = 1800; 
 
     this.rally_point = {x:0,y:0};
-    this.rally_point_x_offset = 5; //positive is towards enemy side
+    this.rally_point_x_offset = 45; //positive is towards enemy side
 
     this.swarm_achieved = false;
     this.swarm_threshold = 15;
     this.engagement_range = 15;
-    this.rush_time = 1600;
+    this.rush_time = 1500;
 
     this.incursion_threshold = 15; //distance from my side of map
     this.excursion_threshold = 15; //distance from opponent's side of map
@@ -107,7 +107,10 @@ export class strategy {
 
   update_max_creep_cost() {
     var extensions = utils.getObjectsByPrototype(StructureExtension).filter(i => i.my);
-    if(extensions.length >= 4) {
+    
+    if(getTicks() < 5) {
+      this.max_creep_cost = 500;
+    } else if(extensions.length >= 4) {
       this.max_creep_cost = extensions.length*100;
     } else {
       this.max_creep_cost = 1000;
@@ -118,15 +121,24 @@ export class strategy {
     if(this.enemy_majority_weapons == "melee") {
       this.compositions["defender"] = {WORK:0,MOVE:5,CARRY:0,ATTACK:0,RANGED_ATTACK:1,HEAL:0,TOUGH:0};
     } else {
-      this.compositions["defender"] = {WORK:0,MOVE:1,CARRY:0,ATTACK:0,RANGED_ATTACK:1,HEAL:0,TOUGH:0};
+      this.compositions["defender"] = {WORK:0,MOVE:4,CARRY:0,ATTACK:0,RANGED_ATTACK:3,HEAL:1,TOUGH:0};
     }
   }
 
   update_limits() {
     if(this.local_containers_energy < this.local_energy_threshold) {
-      this.spawn_limits["mover"] = 8;
-      this.spawn_limits["constructor"] = 1;
+      this.spawn_limits["mover"] = this.counts["defender"] < this.max_movers ? this.counts["defender"] : this.max_movers;
       this.spawn_limits["raider"] = 1;
+    }
+
+    // if(this.counts["constructor"] >= 1 && this.spawn_limits["mover"] < 2) {
+    //   this.spawn_limits["mover"] = 2;
+    // }
+
+    if(this.enemy_armed_incursion) {
+      this.spawn_limits["minuteman"] = 2;
+    } else {
+      this.spawn_limits["minuteman"] = 0;
     }
   }
 
@@ -138,9 +150,15 @@ export class strategy {
     for(let i = 0; i < this.spawn_priority.length; i++) {
       let creep_type = this.spawn_priority[i];
       if(this.counts[creep_type] < this.spawn_limits[creep_type]) {
+        // console.log("Creep type: " + creep_type);
+        // console.log("Count: " + this.counts[creep_type]);
+        // console.log("Limit: " + this.spawn_limits[creep_type]);
         let creep_compsition = adaptive_spawner(this.compositions[creep_type],this.max_creep_cost);
-        if(creep_type == "mover") {
-          creep_compsition = [CARRY,CARRY,CARRY,MOVE,MOVE,MOVE];
+        if(creep_type == "mover" && this.counts["mover"] <= 1) {
+          creep_compsition = [CARRY,CARRY,MOVE,MOVE];
+        }
+        if(creep_type == "constructor" && getTicks() <= 150) {
+          creep_compsition = [CARRY,CARRY,CARRY,CARRY,MOVE,MOVE,MOVE,MOVE,MOVE,MOVE,MOVE,MOVE,MOVE,MOVE,CARRY,WORK,WORK,CARRY];
         }
         var obj = spawn.spawnCreep(creep_compsition);
         if(!obj.error) {
@@ -163,6 +181,10 @@ export class strategy {
 
             case "healer":
               this.creeps_list.push(new healer_creep(obj.object));
+              break;
+            
+            case "minuteman":
+              this.creeps_list.push(new minuteman_creep(obj.object));
               break;
 
             default:
@@ -194,7 +216,9 @@ export class strategy {
 
           case "constructor_creep":
             // console.log("adding defender count");  
-            this.counts["constructor"] += 1;
+            if(creep.state_machine_status && creep.state_machine_status != "enemy_pursuing") {
+              this.counts["constructor"] += 1;
+            }
             break;
             
           case "defender_creep":
@@ -203,14 +227,18 @@ export class strategy {
             break;
           
           case "healer_creep":
-          // console.log("adding defender count");  
-          this.counts["healer"] += 1;
-          break;
+            // console.log("adding defender count");  
+            this.counts["healer"] += 1;
+            break;
 
           case "raider_creep":
-          // console.log("adding defender count");  
-          this.counts["raider"] += 1;
-          break;
+            // console.log("adding defender count");  
+            this.counts["raider"] += 1;
+            break;
+
+          case "minuteman_creep":
+            this.counts["minuteman"] += 1;
+            break;
           
           default:
             break;
@@ -230,9 +258,9 @@ export class strategy {
 
   update_rally_point() {
     if(this.local_containers_energy < this.local_energy_threshold) {
-      this.rally_point_x_offset = 60;
+      this.rally_point_x_offset = 45;
     } else {
-      this.rally_point_x_offset = 5;
+      this.rally_point_x_offset = 45;
     }
 
     let spawn = utils.getObjectsByPrototype(prototypes.StructureSpawn).find(i => i.my);

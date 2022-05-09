@@ -19,9 +19,11 @@ for (let globalKey in arenaConstants) { global[globalKey] = arenaConstants[globa
 
 import { arenaInfo } from '/game';
 
-import { general_creep } from './general_creep'
+import { general_creep } from './general_creep';
 
 import { support_cost_matrix } from '../main.mjs';
+
+import { enemy_armed_creeps, enemy_heal_creeps } from '../my_utils/map_utils.mjs';
 
 export class defender_creep extends general_creep {
     constructor(creep_object) {
@@ -36,11 +38,13 @@ export class defender_creep extends general_creep {
     }
 
     behavior() {
-        var enemy_creeps = utils.getObjectsByPrototype(Creep).filter(i => !i.my);
-        var enemy_spawns = utils.getObjectsByPrototype(StructureSpawn).filter(i => !i.my);
-        var spawn = utils.getObjectsByPrototype(StructureSpawn).find(i => i.my);
-        var closestEnemy = this.creep_obj.findClosestByRange(enemy_creeps);
-        var closestEnemySpawn = this.creep_obj.findClosestByRange(enemy_spawns);
+        let enemy_creeps = utils.getObjectsByPrototype(Creep).filter(i => !i.my);
+        let e_armed_creeps = enemy_armed_creeps();
+        let e_heal_creeps = enemy_heal_creeps();
+        let enemy_spawns = utils.getObjectsByPrototype(StructureSpawn).filter(i => !i.my);
+        let spawn = utils.getObjectsByPrototype(StructureSpawn).find(i => i.my);
+        let closestEnemy = this.creep_obj.findClosestByRange(enemy_creeps);
+        let closestEnemySpawn = this.creep_obj.findClosestByRange(enemy_spawns);
 
         // console.log("!Swarm Achieved: " + !this.swarm_acheived);
         // console.log("Ticks: " + getTicks() + " Rush Time: " + this.rush_time);
@@ -52,14 +56,32 @@ export class defender_creep extends general_creep {
             this.creep_obj.moveTo(spawn.x + this.rally_point["x"],spawn.y + this.rally_point["y"], {swampCost: 2});
             this.range_to_target = this.default_range_to_target;
         } else if (closestEnemy) { //attacking creep
-            if(this.creep_obj.rangedAttack(closestEnemy) == ERR_NOT_IN_RANGE) {
-                this.creep_obj.moveTo(closestEnemy, {swampCost: 2});
-            } else if(getRange(this.creep_obj,closestEnemy) <= 2) {
-                this.creep_obj.moveTo(closestEnemy,{costMatrix: this.support_cost_matrix, swampCost: 2, flee: true, range: 3});
+            if(e_heal_creeps.length > 0) {
+                let closest_heal_enemy = this.creep_obj.findClosestByRange(e_heal_creeps);
+                if(getRange(this.creep_obj,closestEnemy) <= 2) {
+                    let goals = [];
+                    e_armed_creeps.forEach(enemy_armed_creep=> goals.push({ "pos": enemy_armed_creep, "range": 3 }));
+                    let path = searchPath(this.creep_obj, goals, { flee: true, swampCost: 2 });
+                    this.creep_obj.moveTo(path.path[0]);
+                    if(this.creep_obj.rangedAttack(closest_heal_enemy) == ERR_NOT_IN_RANGE) {
+                        this.creep_obj.rangedAttack(closestEnemy);
+                    }
+                } else if(this.creep_obj.rangedAttack(closest_heal_enemy) == ERR_NOT_IN_RANGE) {
+                    this.creep_obj.moveTo(closest_heal_enemy, {swampCost: 2});
+                    this.creep_obj.rangedAttack(closestEnemy);
+                }
+            } else {
+                if(this.creep_obj.rangedAttack(closestEnemy) == ERR_NOT_IN_RANGE) {
+                    this.creep_obj.moveTo(closestEnemy, {swampCost: 2});
+                } else if(getRange(this.creep_obj,closestEnemy) <= 2) {
+                    let goals = [];
+                    e_armed_creeps.forEach(enemy_armed_creep=> goals.push({ "pos": enemy_armed_creep, "range": 3 }));
+                    let path = searchPath(this.creep_obj, goals, { flee: true, swampCost: 2 });
+                    this.creep_obj.moveTo(path.path[0]);
+                }
             }
-            // this.creep_obj.moveTo(closestEnemy);
             this.range_to_target = getRange(this.creep_obj,closestEnemy);
-        } else if (!closestEnemy && closestEnemySpawn && this.creep_obj.rangedAttack(closestEnemySpawn) == ERR_NOT_IN_RANGE) {
+        } else if (!closestEnemy && closestEnemySpawn && this.creep_obj.rangedAttack(closestEnemySpawn) == ERR_NOT_IN_RANGE) { //go for spawn
             this.creep_obj.moveTo(closestEnemySpawn, {swampCost: 2});
             this.range_to_target = getRange(this.creep_obj,closestEnemySpawn);
         } else  if (!closestEnemy && !closestEnemySpawn) {
@@ -67,8 +89,19 @@ export class defender_creep extends general_creep {
             this.range_to_target = this.default_range_to_target;
         }
 
-    }
+        if(this.creep_obj.body.some(bodyPart => bodyPart.type == HEAL)) {
+            let creeps = utils.getObjectsByPrototype(Creep).filter(i => i.my);
+            let my_damaged_creeps = creeps.filter(i => i.hits < i.hitsMax);
+            let closest_damaged_friendly = this.creep_obj.findClosestByRange(my_damaged_creeps, {costMatrix: this.support_cost_matrix});
+            if(closest_damaged_friendly && getRange(this.creep_obj,closest_damaged_friendly) <= 1) {
+                this.creep_obj.heal(closest_damaged_friendly);
+            } else if (this.creep_obj.hits < this.creep_obj.hitsMax){
+                this.creep_obj.heal(this.creep_obj);
+            }
+        }
 
+    }
+    
     update_data(variables) {
         if("var_swarm_achieved" in variables) {this.swarm_acheived = variables["var_swarm_achieved"]};
         if("var_engagement_range" in variables) {this.engagement_range = variables["var_engagement_range"]};

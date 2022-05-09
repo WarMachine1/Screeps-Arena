@@ -48,27 +48,16 @@ export class mover_creep extends general_creep {
         var spawn = utils.getObjectsByPrototype(StructureSpawn).find(i => i.my);
         var extensions = utils.getObjectsByPrototype(StructureExtension).filter(i => i.my);
         let requesting_constructors = this.constructors_requesting_energy();
-        if(this.creep_obj.store.getUsedCapacity(RESOURCE_ENERGY) <= 0) {
-            var closest_container = this.creep_obj.findClosestByRange(containers, {costMatrix: this.support_cost_matrix});
-            //console.log("Closest Container Location: (" + closest_container.x + "," + closest_container.y + ")")
-            
-            if(containers.length > 0) {
-                if(this.creep_obj.withdraw(closest_container, RESOURCE_ENERGY) == ERR_NOT_IN_RANGE) {
-                    this.creep_obj.moveTo(closest_container, {costMatrix: this.support_cost_matrix});
-                    //this.creep_obj.moveTo(closest_container);
-                }
-            }
-        // } else if (tower_requesting()) {
-        //     var target_tower = nearest_tower_requesting(this.creep_obj);
-        //     if(this.creep_obj.transfer(target_tower, RESOURCE_ENERGY) == ERR_NOT_IN_RANGE) {
-        //         this.creep_obj.moveTo(target_tower, {costMatrix: support_cost_matrix});
-        //         // creep.moveTo(target_tower);
-        //     }
+        var closest_container = this.creep_obj.findClosestByRange(containers, {costMatrix: this.support_cost_matrix, swampCost: 2});
+        if(this.creep_obj.store.getUsedCapacity(RESOURCE_ENERGY) <= 0 && containers.length > 0 && this.creep_obj.withdraw(closest_container, RESOURCE_ENERGY) == ERR_NOT_IN_RANGE) {
+            this.creep_obj.moveTo(closest_container, {costMatrix: this.support_cost_matrix, swampCost: 2});
         } else if (requesting_constructors.length > 0) {
             let requesting_constructor_creeps = requesting_constructors.map(a => a.creep_obj)
-            let target_constructor = this.creep_obj.findClosestByRange(requesting_constructor_creeps, {costMatrix: this.support_cost_matrix});
+            let target_constructor = this.creep_obj.findClosestByRange(requesting_constructor_creeps, {costMatrix: this.support_cost_matrix, swampCost: 2});
             if(this.creep_obj.transfer(target_constructor, RESOURCE_ENERGY) == ERR_NOT_IN_RANGE) {
-                this.creep_obj.moveTo(target_constructor, {costMatrix: this.support_cost_matrix});
+                this.creep_obj.moveTo(target_constructor, {costMatrix: this.support_cost_matrix, swampCost: 2});
+            } else if (closest_container) {
+                this.creep_obj.moveTo(closest_container, {costMatrix: this.support_cost_matrix, swampCost: 2});
             }
         } else {
             //drop off at closest extension or spawn with capacity
@@ -89,7 +78,9 @@ export class mover_creep extends general_creep {
             let closest_production_not_full = this.creep_obj.findClosestByRange(production_not_full);
 
             if (this.creep_obj.transfer(closest_production_not_full, RESOURCE_ENERGY) == ERR_NOT_IN_RANGE) {
-                this.creep_obj.moveTo(closest_production_not_full, {costMatrix: this.support_cost_matrix});
+                this.creep_obj.moveTo(closest_production_not_full, {costMatrix: this.support_cost_matrix, swampCost: 2});
+            } else if (closest_container) {
+                this.creep_obj.moveTo(closest_container, {costMatrix: this.support_cost_matrix, swampCost: 2});
             }
         }
     }

@@ -50,15 +50,28 @@ let this_logger = new logger();
 export var support_cost_matrix = generate_support_cost_matrix();
 export var visual_debug = false;
 
+/*
+TO DO:
+-Constructor container extension construction behavior per https://arenainsights.net/link-game/CXZIQDRJSW
+-Mover flee behavior
+-constructor flee behavior
+-contingencies for target container decaying in all states (in case constructor movement hampered or forced to flee)
+
+*/
 export function loop() {
+    if(getTicks() < 2) {
+        let spawn = utils.getObjectsByPrototype(StructureSpawn).find(i => i.my);
+        utils.createConstructionSite(spawn.x,spawn.y, StructureRampart);
+    } else {
 
-    support_cost_matrix = generate_support_cost_matrix();
+        support_cost_matrix = generate_support_cost_matrix();
 
-    creeps_list = this_strategy.get_creeps_list();
-    this_strategy.update();
-    this_logger.update();
-    update_creeps();
-    this_construction_manager.update();
+        creeps_list = this_strategy.get_creeps_list();
+        this_strategy.update();
+        this_logger.update();
+        update_creeps();
+        this_construction_manager.update();
+    }
     
 }
 
