@@ -52,11 +52,9 @@ export var visual_debug = false;
 
 /*
 TO DO:
--Constructor container extension construction behavior per https://arenainsights.net/link-game/CXZIQDRJSW
--Mover flee behavior
--constructor flee behavior
--contingencies for target container decaying in all states (in case constructor movement hampered or forced to flee)
-
+-mover behavior to dump energy when container is about to despawn
+-mover behavior to pick up dropped piles as well as containers (exclude piles used by constructors)
+-constructors should not flee "forward" for a container, shoul dbe no less than 5 in x-direction towards enemy base
 */
 export function loop() {
     if(getTicks() < 2) {

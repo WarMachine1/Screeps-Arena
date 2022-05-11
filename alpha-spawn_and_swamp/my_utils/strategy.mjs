@@ -37,7 +37,7 @@ export class strategy {
     this.map_side_multiplier = 1;
     this.spawn_priority = ["minuteman","mover","constructor","raider","healer","defender"];
     // this.spawn_priority = ["mover","constructor","raider","defender","healer"];
-    this.spawn_limits = {minuteman:0,mover:2,constructor:1,raider:0,defender:100, healer:0};
+    this.spawn_limits = {minuteman:0,mover:2,constructor:1,raider:1,defender:100, healer:0};
     this.counts = {minuteman:0,mover:0,constructor:0,raider:0,defender:0,healer:0};
 
     // this.compositions = 

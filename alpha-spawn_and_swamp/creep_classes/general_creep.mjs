@@ -135,4 +135,32 @@ export class general_creep {
 
     return ticks;
   }
+
+  find_energy_within_ticks(ticks_on_station,min_amount) {
+    let resources = utils.getObjectsByPrototype(Resource).filter(i => i.amount > min_amount);
+    let containers = utils.getObjectsByPrototype(StructureContainer).filter(i => i.store[RESOURCE_ENERGY] > min_amount);
+
+    let viable_energy = [];
+
+    for(let r of resources) {
+        let ticks_moving = this.ticks_to_reach(r, {costMatrix: this.support_cost_matrix, swampCost: this.swamp_cost});
+        let amount_upon_arrival = r.amount - ((ticks_on_station + ticks_moving)*2);
+        if(amount_upon_arrival >= min_amount) {
+            viable_energy.push(r);
+        }
+    }
+
+    for(let c of containers) {
+        let ticks_moving = this.ticks_to_reach(c, {costMatrix: this.support_cost_matrix, swampCost: this.swamp_cost});
+        let sufficient_decay = true;
+        if(c.ticksToDecay) {
+            sufficient_decay = c.ticksToDecay > (ticks_moving + ticks_on_station);
+        }
+        if(sufficient_decay) {
+            viable_energy.push(c);
+        }
+    }
+
+    return this.creep_obj.findClosestByPath(viable_energy);
+  }
 }
